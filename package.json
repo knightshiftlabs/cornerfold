@@ -1,7 +1,7 @@
 {
   "name": "cornerfold",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "changelog": "node scripts/changelog.mjs",
@@ -30,5 +30,8 @@
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
     "vite-plugin-pwa": "^0.21.1"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
   }
 }
