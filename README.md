@@ -39,6 +39,17 @@ Files never leave the device: there is no upload code, and the CSP `connect-src 
 
 The remaining personal data is the host's IP logs. Disclose them in the privacy policy and keep the host's DPA on file.
 
+## Testing
+
+`npm test` runs the full automated suite (about 20 seconds): the export engine, compression, file
+detection, size parsing, editing and undo, and the interface in a simulated browser. See
+`tests/README.md` for what each file covers and the rules for adding tests.
+
+**Release criteria:** no release unless `npm test` passes and the production build succeeds. This is
+enforced: `npm version patch`, `minor` or `major` runs both first and stops, with no version bump and
+no tag, if either fails. Every bug fix gets a regression test. Releases that touch
+file handling also get a run through the torture-test pack's manual checklist.
+
 ## Versioning and releases
 
 Cornerfold follows [Semantic Versioning](https://semver.org). For an app people use rather than code people import, that means: a **major** version (2.0.0) for changes that alter how people work with it or remove something they relied on; a **minor** version (1.1.0) for new tools or features; a **patch** version (1.0.1) for fixes.
@@ -49,10 +60,10 @@ While working, add each user-facing change under `## [Unreleased]`, in plain lan
 
 1. In `CHANGELOG.md`, rename `## [Unreleased]` to the new version and date, e.g. `## [1.1.0] - 2026-11-15`, and add a fresh empty `## [Unreleased]` above it.
 2. Commit that: `git add .` then `git commit -m "Changelog for 1.1.0"`.
-3. Bump the version, which commits and tags it: `npm version 1.1.0 -m "Release %s"`.
+3. Bump the version, which runs the tests and the production build first, then commits and tags it: `npm version 1.1.0 -m "Release %s"`. If a test fails, nothing is released; fix it and run the command again.
 4. Publish with the tag: `git push --follow-tags`.
 
-Every build also regenerates `public/licenses.txt` (the open-source notices) from the installed packages, so adding a dependency updates it automatically.
+`public/changes.html` and `public/licenses.txt` are generated on every build (and when the dev server starts), so they are not committed to Git. Every build regenerates `public/licenses.txt` (the open-source notices) from the installed packages, so adding a dependency updates it automatically.
 
 `public/.well-known/security.txt` has an `Expires` date (currently 31 October 2027). Renew it before then, or security researchers will treat it as stale.
 
