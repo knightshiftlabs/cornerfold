@@ -8,6 +8,14 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.5] - 2026-11-01
+
+### Changed
+- Phones and tablets now show the stack of pages on the home screen, with its landing animation. On phones it sits above the headline, sized so the Choose files button stays on screen even on small phones; tablets in portrait use the same layout with a larger stack.
+- On touch screens, the pages fan out when you press them, and sit slightly apart at rest.
+- The privacy points line up as a tidy two-by-two grid at every screen size.
+- The keyboard hint is hidden on touch screens, where it doesn’t apply.
+
 ## [1.1.4] - 2026-10-31
 
 ### Fixed
