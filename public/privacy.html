@@ -23,7 +23,7 @@
   <p>Because Cornerfold tracks nothing, “Do Not Track” and Global Privacy Control signals from your browser have nothing to switch off. You get that result whether or not you send them.</p>
 
   <h2>If you email us</h2>
-  <p>If you write to us, we receive your email address and your message, and use them only to reply. Mail to cornerfold.org addresses is passed on by Cloudflare’s email forwarding service, which handles it only to deliver it. We don’t add you to any list, and we delete the conversation when it’s resolved if you ask.</p>
+  <p>If you write to us, we receive your email address and your message, and use them only to reply. Mail to cornerfold.org addresses is forwarded by Cloudflare’s email routing service, which handles it only to deliver it, to an inbox hosted by Google (Gmail), so Google processes it too. We keep correspondence only as long as we need it to deal with your message. We don’t add you to any list, and if you ask, we delete the conversation, including attachments.</p>
 
   <h2>What our host sees</h2>
   <p>Cornerfold is hosted by Cloudflare, Inc. on Cloudflare Pages. Like any web host, it handles your IP address and browser details in order to deliver the site, and may keep logs for security and reliability. Apart from email you choose to send us, that is the only personal data involved in using Cornerfold. It is processed under our legitimate interest in operating a secure website (GDPR Art. 6(1)(f)), under Cloudflare’s data processing addendum. See <a href="https://www.cloudflare.com/privacypolicy/" rel="noreferrer">Cloudflare’s privacy policy</a> for how they handle this data and how long they keep it.</p>
@@ -32,10 +32,15 @@
   <p>You don’t have to take our word for any of this. Open your browser’s developer tools, select the Network tab, then add and export a file. You’ll see Cornerfold load its own files and nothing else: no request ever carries your document anywhere. You can also switch on airplane mode after your first visit and keep working.</p>
 
   <h2>Files you export</h2>
-  <p>Exported PDFs are created on your device and saved straight to it. We strip document metadata such as author and creator fields from the files we produce.</p>
+  <p>Exported PDFs are created on your device and saved straight to it. Here is exactly what happens to the document information inside them:</p>
+  <ul>
+    <li>When you merge, split, rearrange, rotate or convert images, the new PDF carries none of the original document properties: no title, author, subject, keywords, creator, producer, creation or modification dates, and no embedded metadata (XMP).</li>
+    <li>When you compress a single PDF without changing it, the title is kept, and the other properties listed above are removed.</li>
+    <li>What’s on the pages themselves, including comments, highlights and links, is kept. Cornerfold doesn’t scan pages for hidden personal information, so check sensitive documents yourself before sharing them.</li>
+  </ul>
 
   <h2>Your rights</h2>
-  <p>Depending on where you live, laws such as the EU GDPR, the UK GDPR and India’s Digital Personal Data Protection Act give you rights over your personal data, including the right to ask what we hold about you and to have it corrected or deleted.</p>
+  <p>Depending on where you live, laws such as the EU GDPR and the UK GDPR give you rights over your personal data, including the right to ask what we hold about you and to have it corrected or deleted. India’s Digital Personal Data Protection Act gives similar rights once its rights provisions take effect in May 2027. Until then, we honour the same requests from anyone, wherever they live.</p>
   <p>The only personal data we hold ourselves is email you have sent us, and we will answer any request about it. We don’t see Cloudflare’s request logs, but we will pass on any request about them and help where we can. You can also complain to the data protection authority where you live.</p>
 
   <h2>Security</h2>

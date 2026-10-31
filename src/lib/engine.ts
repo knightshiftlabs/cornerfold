@@ -22,7 +22,7 @@ export function getWorker() {
     else w.reject(new Error(error))
   }
   worker.onerror = () => {
-    for (const w of waiting.values()) w.reject(new Error('The PDF engine crashed. Try again.'))
+    for (const w of waiting.values()) w.reject(new Error('Cornerfold’s PDF engine stopped. Reload the page and try again.'))
     waiting.clear()
     sent.clear()
     worker?.terminate()
@@ -48,4 +48,12 @@ export function runJob(op: 'merge' | 'split' | 'compress', pages: Page[], name: 
       payload.map((s) => s.bytes.buffer),
     )
   })
+}
+
+/** Tell the export engine to drop files the app no longer needs. */
+export function forgetSources(ids: string[]) {
+  const known = ids.filter((id) => sent.has(id))
+  if (!known.length || !worker) return
+  for (const id of known) sent.delete(id)
+  worker.postMessage({ op: 'forget', ids: known })
 }

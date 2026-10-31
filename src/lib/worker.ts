@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 // Heavy lifting runs here so the UI never stutters while a 300-page PDF is being built.
-import { PDFDocument, degrees, type PDFImage, type PDFPage } from 'pdf-lib'
+import { PDFArray, PDFDict, PDFDocument, PDFName, PDFObjectCopier, PDFRef, degrees, type PDFImage, type PDFPage } from 'pdf-lib'
 import { zipSync } from 'fflate'
 import { Compressor, PRESETS, type Codec } from './compress'
 
@@ -75,7 +75,60 @@ async function build(pages: JobPage[]) {
     }
     if (normalize(p.rotation)) page.setRotation(degrees(normalize(page.getRotation().angle + p.rotation)))
   }
+  await rebuildForm(out, [...wanted.keys()])
   return out.save()
+}
+
+/**
+ * Copying pages brings their form fields along, but not the document-level form that makes
+ * them editable. Rebuild it from the fields that actually landed in the output.
+ */
+async function rebuildForm(out: PDFDocument, sourceIds: string[]) {
+  const N = PDFName.of
+  const roots: PDFRef[] = []
+  const seen = new Set<string>()
+  for (const page of out.getPages()) {
+    const annots = page.node.lookup(N('Annots'))
+    if (!(annots instanceof PDFArray)) continue
+    for (let i = 0; i < annots.size(); i++) {
+      const first = annots.get(i)
+      if (!(first instanceof PDFRef)) continue
+      const widget = out.context.lookup(first)
+      if (!(widget instanceof PDFDict) || widget.get(N('Subtype'))?.toString() !== '/Widget') continue
+      // Climb to the top of the field tree; that's what the form lists.
+      let ref: PDFRef = first
+      let node: PDFDict = widget
+      for (let hops = 0; hops < 32; hops++) {
+        const parent = node.get(N('Parent'))
+        if (!(parent instanceof PDFRef)) break
+        const next = out.context.lookup(parent)
+        if (!(next instanceof PDFDict)) break
+        ref = parent
+        node = next
+      }
+      const key = `${ref.objectNumber} ${ref.generationNumber}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        roots.push(ref)
+      }
+    }
+  }
+  if (!roots.length) return
+
+  const form = out.context.obj({ Fields: roots })
+  // Carry over the first source form's default appearance and fonts, so fields stay editable.
+  for (const sid of sourceIds) {
+    const src = await loadSource(sid)
+    const acro = src.catalog.lookup(N('AcroForm'))
+    if (!(acro instanceof PDFDict)) continue
+    const copier = PDFObjectCopier.for(src.context, out.context)
+    for (const k of ['DA', 'DR', 'Q', 'NeedAppearances']) {
+      const v = acro.get(N(k))
+      if (v) form.set(N(k), copier.copy(v))
+    }
+    break
+  }
+  out.catalog.set(N('AcroForm'), out.context.register(form))
 }
 
 // ---- Compression ----
@@ -119,6 +172,14 @@ function compressorFor(pages: JobPage[]) {
 }
 
 self.onmessage = async (e: MessageEvent) => {
+  if (e.data.op === 'forget') {
+    for (const sid of e.data.ids as string[]) {
+      sources.delete(sid)
+      parsed.delete(sid)
+    }
+    session = null
+    return
+  }
   const { id, op, name, pages, sources: incoming, options } = e.data as {
     id: number
     op: 'merge' | 'split' | 'compress'

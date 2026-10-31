@@ -8,6 +8,24 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-10-31
+
+### Added
+- A warning when you add a digitally signed PDF: any change, even compressing, makes the signature invalid, though the pages look the same.
+
+### Fixed
+- Fillable forms stay fillable after merging. Before, the fields still showed but could no longer be edited.
+- A file that’s damaged in a way Cornerfold can’t repair now gets a readable message at export, not a technical error.
+- If Cornerfold is updated while you have it open, it keeps working instead of failing to read new files, and tells you plainly if a reload is needed.
+- Clearer messages when a file can’t be added: iPhone photos (HEIC) the browser can’t open, PDFs that need a password, PDFs with editing restrictions such as many bank statements, and empty files.
+- The custom size box now understands sizes typed like “1,000 KB” or “1.5mb”, and explains what’s wrong instead of silently doing nothing.
+- Memory used by files you’ve deleted, and can no longer undo, is now freed, so long sessions stay fast.
+
+### Changed
+- About page: describes precisely what Cornerfold does and doesn’t have, rather than claiming no system exists at all.
+- Privacy policy: states that forwarded email arrives in Gmail and how long we keep it; lists exactly which document information exported PDFs keep and lose; and explains when India’s DPDP Act rights take effect.
+- Terms: lists the browsers Cornerfold supports.
+
 ## [1.1.2] - 2026-10-31
 
 ### Added
