@@ -8,6 +8,16 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-31
+
+### Added
+- An About page: why Cornerfold exists, how it works without seeing your files, and who makes it.
+
+### Changed
+- Privacy policy, made more precise: Cornerfold itself collects nothing, and the policy now states plainly the two limited exceptions, technical details seen by our host and any email you send us.
+- Privacy policy: the rights section now reflects that the only personal data we hold is email you’ve sent us.
+- Privacy policy: a new Security section with how to report vulnerabilities.
+
 ## [1.1.1] - 2026-10-31
 
 ### Changed

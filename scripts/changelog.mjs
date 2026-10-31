@@ -68,6 +68,7 @@ const html = `<!doctype html>
   ${out.join('\n  ')}
   <footer>
     <a href="/">Cornerfold</a>
+    <a href="/about.html">About</a>
     <a href="/changes.html">What’s new</a>
     <a href="/privacy.html">Privacy</a>
     <a href="/terms.html">Terms</a>
