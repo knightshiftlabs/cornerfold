@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "changelog": "node scripts/changelog.mjs",
-    "dev": "node scripts/changelog.mjs && vite",
+    "dev": "node scripts/changelog.mjs && node scripts/licenses.mjs && vite",
     "build": "node scripts/changelog.mjs && node scripts/licenses.mjs && tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "preversion": "npm test"
+    "preversion": "npm test && npm run build"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

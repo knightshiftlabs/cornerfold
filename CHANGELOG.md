@@ -8,6 +8,11 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.6] - 2026-11-01
+
+### Changed
+- Privacy policy: describes more precisely what the site’s security policy protects against, and that the first safeguard is Cornerfold’s own code never sending files anywhere.
+
 ## [1.1.5] - 2026-11-01
 
 ### Changed
