@@ -16,7 +16,7 @@ export default defineConfig({
       manifest: {
         name: 'Cornerfold',
         short_name: 'Cornerfold',
-        description: 'Merge, split, compress, reorder and rotate PDFs. Files never leave your device.',
+        description: 'PDF tools that never see your files. Merge, split and compress PDFs on your device: nothing uploaded, no tracking, no account.',
         theme_color: '#DCE2EA',
         background_color: '#DCE2EA',
         display: 'standalone',
@@ -29,12 +29,29 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,mjs,css,html,svg,png,woff2,txt}'],
+        // The link-preview image is for chat apps and social sites, not for the app itself.
+        globIgnores: ['og.png'],
         // pdf.js worker is ~1 MB; cache it so the app works fully offline.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/privacy/, /^\/changes/, /^\/terms/, /^\/licenses/],
       },
     }),
   ],
+  // Preact's compatibility layer stands in for React: same API, about 35 KB less to download.
+  resolve: {
+    alias: {
+      react: 'preact/compat',
+      'react-dom/client': 'preact/compat/client',
+      'react-dom': 'preact/compat',
+      'react/jsx-runtime': 'preact/jsx-runtime',
+    },
+  },
   worker: { format: 'es' },
-  build: { target: 'es2022' },
+  build: {
+    target: 'es2022',
+    // Inline nothing as data: URLs, so the CSP can forbid them.
+    assetsInlineLimit: 0,
+    // Modern browsers preload modules natively; skip the polyfill and its fetch().
+    modulePreload: { polyfill: false },
+  },
 })

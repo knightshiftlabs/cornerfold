@@ -4,7 +4,10 @@ export function DropOverlay() {
   return (
     <div className="pointer-events-none fixed inset-0 z-50 bg-desk/80 backdrop-blur-sm">
       <div className="absolute inset-3 grid place-items-center rounded-[28px] border-[3px] border-dashed border-ink sm:inset-5">
-        <p className="headline text-ink">Drop to add</p>
+        <div className="text-center">
+          <p className="headline text-ink">Drop to add</p>
+          <p className="mt-4 text-lg font-medium text-muted">It stays on this device.</p>
+        </div>
       </div>
     </div>
   )

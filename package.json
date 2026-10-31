@@ -1,7 +1,7 @@
 {
   "name": "cornerfold",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "changelog": "node scripts/changelog.mjs",
@@ -18,8 +18,7 @@
     "lucide-react": "^0.468.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "preact": "^10.29.8",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

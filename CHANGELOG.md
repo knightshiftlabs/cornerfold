@@ -16,6 +16,17 @@ This file is the source for the public page at /changes.html, which is generated
 - Compress works on whatever is on the page, so you can merge, rearrange and compress in one go.
 - Compressing a single, unedited PDF keeps its bookmarks and form fields.
 
+### Changed
+- Privacy, front and centre. The home screen now says plainly what Cornerfold is: PDF tools that never see your files.
+- While you work, a badge shows that your files are on this device. Lose your connection and it tells you you’re offline, with everything still working.
+- Shared links now show a proper preview card in WhatsApp, LinkedIn and other apps.
+- About half as much code to download before the app appears, so it opens faster, especially on mobile data.
+- The first export after adding files starts instantly; the PDF engine now warms up in the background.
+
+### Security
+- Stricter security policy: the app can’t load anything from other websites, and can’t use inline styles or embedded data URLs.
+- Privacy policy: explains what happens if you email us, and how to check for yourself that files never leave your device.
+
 ## [1.0.1] - 2026-10-31
 
 ### Added

@@ -58,20 +58,7 @@ const html = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>What’s new: Cornerfold</title>
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-<style>
-  :root { --desk:#dce2ea; --text:#1d2532; --muted:#4f5b6c; --ink:#2433d6; --line:rgb(29 37 50 / .14); color-scheme: light dark; }
-  @media (prefers-color-scheme: dark) { :root { --desk:#161d27; --text:#e6ebf2; --muted:#97a3b4; --ink:#8f9bff; --line:rgb(230 235 242 / .14); } }
-  body { margin:0; background:var(--desk); color:var(--text); font: 17px/1.65 ui-sans-serif, system-ui, sans-serif; }
-  main { max-width: 64ch; margin: 0 auto; padding: 56px 24px 96px; }
-  h1 { font-size: 2.4rem; line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 8px; }
-  section { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 8px; }
-  h2 { font-size: 1.35rem; margin: 1em 0 0; }
-  .date, .muted { color: var(--muted); margin-top: 2px; }
-  h3 { font-size: 1rem; margin: 1.6em 0 0.3em; }
-  ul { padding-left: 1.2em; margin: 0; } li { margin: 0.25em 0; }
-  a { color: var(--ink); } code { font-size: .9em; }
-  footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: .9rem; }
-</style>
+<link rel="stylesheet" href="/pages.css" />
 </head>
 <body>
 <main>

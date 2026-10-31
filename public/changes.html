@@ -6,20 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>What’s new: Cornerfold</title>
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-<style>
-  :root { --desk:#dce2ea; --text:#1d2532; --muted:#4f5b6c; --ink:#2433d6; --line:rgb(29 37 50 / .14); color-scheme: light dark; }
-  @media (prefers-color-scheme: dark) { :root { --desk:#161d27; --text:#e6ebf2; --muted:#97a3b4; --ink:#8f9bff; --line:rgb(230 235 242 / .14); } }
-  body { margin:0; background:var(--desk); color:var(--text); font: 17px/1.65 ui-sans-serif, system-ui, sans-serif; }
-  main { max-width: 64ch; margin: 0 auto; padding: 56px 24px 96px; }
-  h1 { font-size: 2.4rem; line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 8px; }
-  section { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 8px; }
-  h2 { font-size: 1.35rem; margin: 1em 0 0; }
-  .date, .muted { color: var(--muted); margin-top: 2px; }
-  h3 { font-size: 1rem; margin: 1.6em 0 0.3em; }
-  ul { padding-left: 1.2em; margin: 0; } li { margin: 0.25em 0; }
-  a { color: var(--ink); } code { font-size: .9em; }
-  footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: .9rem; }
-</style>
+<link rel="stylesheet" href="/pages.css" />
 </head>
 <body>
 <main>
@@ -33,6 +20,19 @@
   <li>Fit under a size limit: pick 100 KB, 200 KB, 500 KB, 1 MB, 2 MB or type your own, and Cornerfold finds the best quality that fits. Useful for forms and portals with upload limits.</li>
   <li>Compress works on whatever is on the page, so you can merge, rearrange and compress in one go.</li>
   <li>Compressing a single, unedited PDF keeps its bookmarks and form fields.</li>
+  </ul>
+  <h3>Changed</h3>
+  <ul>
+  <li>Privacy, front and centre. The home screen now says plainly what Cornerfold is: PDF tools that never see your files.</li>
+  <li>While you work, a badge shows that your files are on this device. Lose your connection and it tells you you’re offline, with everything still working.</li>
+  <li>Shared links now show a proper preview card in WhatsApp, LinkedIn and other apps.</li>
+  <li>About half as much code to download before the app appears, so it opens faster, especially on mobile data.</li>
+  <li>The first export after adding files starts instantly; the PDF engine now warms up in the background.</li>
+  </ul>
+  <h3>Security</h3>
+  <ul>
+  <li>Stricter security policy: the app can’t load anything from other websites, and can’t use inline styles or embedded data URLs.</li>
+  <li>Privacy policy: explains what happens if you email us, and how to check for yourself that files never leave your device.</li>
   </ul>
   </section>
   <section id="v1.0.1"><h2>Version 1.0.1</h2><p class="date">31 October 2026</p>
