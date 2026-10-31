@@ -18,7 +18,7 @@ export function TopBar() {
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-2 border-b border-line bg-desk/85 px-3 backdrop-blur-md sm:gap-4 sm:px-8">
-      <a href="/" className="rounded-lg focus-visible:outline-2 focus-visible:outline-ink" aria-label="fold home">
+      <a href="/" className="rounded-lg focus-visible:outline-2 focus-visible:outline-ink" aria-label="Cornerfold home">
         <Wordmark />
       </a>
 
@@ -75,9 +75,14 @@ export function TopBar() {
             </Button>
           </>
         ) : (
-          <a href="/privacy.html" className="rounded-full px-3 py-2 text-sm font-medium text-muted hover:text-fg">
-            Privacy
-          </a>
+          <nav className="flex items-center gap-1 text-sm font-medium text-muted">
+            <a href="/changes.html" className="rounded-full px-3 py-2 hover:text-fg">
+              What’s new
+            </a>
+            <a href="/privacy.html" className="rounded-full px-3 py-2 hover:text-fg">
+              Privacy
+            </a>
+          </nav>
         )}
       </div>
     </header>
