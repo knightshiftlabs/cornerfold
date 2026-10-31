@@ -2,10 +2,12 @@
 // Heavy lifting runs here so the UI never stutters while a 300-page PDF is being built.
 import { PDFDocument, degrees, type PDFImage, type PDFPage } from 'pdf-lib'
 import { zipSync } from 'fflate'
+import { Compressor, PRESETS, type Codec } from './compress'
 
 interface WorkerSource {
   id: string
   kind: 'pdf' | 'image'
+  pageCount: number
   bytes: Uint8Array
   mime?: string
   width?: number
@@ -76,18 +78,70 @@ async function build(pages: JobPage[]) {
   return out.save()
 }
 
+// ---- Compression ----
+
+const browserCodec: Codec<ImageBitmap> = {
+  decodeJpeg: (bytes) => createImageBitmap(new Blob([bytes], { type: 'image/jpeg' })),
+  fromRGBA: (rgba, w, h) => createImageBitmap(new ImageData(rgba, w, h)),
+  async encodeJpeg(src, w, h, quality) {
+    const canvas = new OffscreenCanvas(w, h)
+    const ctx = canvas.getContext('2d')!
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(src, 0, 0, w, h)
+    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality })
+    return new Uint8Array(await blob.arrayBuffer())
+  },
+}
+
+/** One compression session per page arrangement, so presets and size targets reuse decoded images. */
+let session: { key: string; compressor: Promise<Compressor<ImageBitmap>> } | null = null
+
+function compressorFor(pages: JobPage[]) {
+  const key = JSON.stringify(pages)
+  if (session?.key !== key) {
+    session = {
+      key,
+      compressor: (async () => {
+        // A single, untouched PDF is compressed as-is, which keeps its bookmarks and form fields.
+        const first = sources.get(pages[0]?.sourceId)
+        const untouched =
+          first?.kind === 'pdf' &&
+          pages.length === first.pageCount &&
+          pages.every((p, i) => p.sourceId === first.id && p.index === i && normalize(p.rotation) === 0)
+        const base = untouched ? first.bytes : await build(pages)
+        const c = new Compressor(base, browserCodec)
+        await c.init()
+        return c
+      })(),
+    }
+  }
+  return session.compressor
+}
+
 self.onmessage = async (e: MessageEvent) => {
-  const { id, op, name, pages, sources: incoming } = e.data as {
+  const { id, op, name, pages, sources: incoming, options } = e.data as {
     id: number
-    op: 'merge' | 'split'
+    op: 'merge' | 'split' | 'compress'
     name: string
     pages: JobPage[]
     sources: WorkerSource[]
+    options?: { preset?: keyof typeof PRESETS; target?: number }
   }
   for (const s of incoming) sources.set(s.id, s)
   try {
     let files: { name: string; bytes: Uint8Array }[]
-    if (op === 'merge') {
+    let stats: { original: number; size: number; met: boolean } | undefined
+    if (op === 'compress') {
+      const c = await compressorFor(pages)
+      let bytes: Uint8Array
+      let met = true
+      if (options?.target) ({ bytes, met } = await c.fitUnder(options.target))
+      else bytes = await c.run(PRESETS[options?.preset ?? 'balanced'])
+      // Always send a copy: transferring would detach buffers the session keeps for reuse.
+      bytes = bytes.slice()
+      files = [{ name, bytes }]
+      stats = { original: c.source.length, size: bytes.length, met }
+    } else if (op === 'merge') {
       files = [{ name, bytes: await build(pages) }]
     } else {
       const width = Math.max(2, String(pages.length).length)
@@ -98,7 +152,7 @@ self.onmessage = async (e: MessageEvent) => {
       // PDFs are already compressed; store them as-is for speed.
       files = [{ name: `${name}-pages.zip`, bytes: zipSync(entries, { level: 0 }) }]
     }
-    ;(self as unknown as DedicatedWorkerGlobalScope).postMessage({ id, ok: true, files }, files.map((f) => f.bytes.buffer))
+    ;(self as unknown as DedicatedWorkerGlobalScope).postMessage({ id, ok: true, files, stats }, files.map((f) => f.bytes.buffer))
   } catch (err) {
     ;(self as unknown as DedicatedWorkerGlobalScope).postMessage({ id, ok: false, error: err instanceof Error ? err.message : String(err) })
   }

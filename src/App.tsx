@@ -4,6 +4,7 @@ import { TopBar } from './components/TopBar'
 import { EmptyState } from './components/EmptyState'
 import { PageGrid } from './components/PageGrid'
 import { Toast } from './components/Toast'
+import { CompressDialog } from './components/CompressDialog'
 import { DropOverlay, Hints } from './components/Overlays'
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
       <main>{hasPages ? <PageGrid /> : <EmptyState />}</main>
       {hasPages && <Hints />}
       {dragging && <DropOverlay />}
+      <CompressDialog />
       <Toast />
     </>
   )

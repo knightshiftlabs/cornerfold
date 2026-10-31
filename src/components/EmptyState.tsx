@@ -10,7 +10,7 @@ export function EmptyState() {
         <div>
           <h1 className="headline max-w-[11ch]">Drop PDFs and images anywhere.</h1>
           <p className="mt-7 max-w-[46ch] text-lg leading-relaxed text-muted sm:text-xl">
-            Merge, split, reorder and rotate pages. Everything happens on this device, nothing is uploaded, and it still works
+            Merge, split, compress, reorder and rotate pages. Everything happens on this device, nothing is uploaded, and it still works
             with your Wi‑Fi off.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-3">

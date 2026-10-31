@@ -37,6 +37,8 @@ interface State {
   future: Page[][]
   busy: string | null
   toast: Toast | null
+  compressOpen: boolean
+  setCompressOpen: (open: boolean) => void
 
   addPages: (sources: Source[], pages: Page[]) => void
   reorder: (activeId: string, overId: string) => void
@@ -79,6 +81,8 @@ export const useStore = create<State>((set, get) => {
     future: [],
     busy: null,
     toast: null,
+    compressOpen: false,
+    setCompressOpen: (compressOpen) => set({ compressOpen }),
 
     addPages: (sources, pages) => {
       set((s) => ({ sources: { ...s.sources, ...Object.fromEntries(sources.map((x) => [x.id, x])) } }))

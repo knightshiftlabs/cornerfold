@@ -8,6 +8,14 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-31
+
+### Added
+- Compress PDFs. Choose Light, Balanced or Smallest and see each one’s exact size before you download, not a guess.
+- Fit under a size limit: pick 100 KB, 200 KB, 500 KB, 1 MB, 2 MB or type your own, and Cornerfold finds the best quality that fits. Useful for forms and portals with upload limits.
+- Compress works on whatever is on the page, so you can merge, rearrange and compress in one go.
+- Compressing a single, unedited PDF keeps its bookmarks and form fields.
+
 ## [1.0.1] - 2026-10-31
 
 ### Added

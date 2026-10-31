@@ -3,18 +3,18 @@ import { runJob } from './engine'
 import { ingestFiles } from './ingest'
 
 /** Actions apply to the selection, or to everything when nothing is selected. */
-function targets() {
+export function targets() {
   const { pages, selected } = useStore.getState()
   return selected.size ? pages.filter((p) => selected.has(p.id)) : pages
 }
 
-function baseName(pageList: { sourceId: string }[]) {
+export function baseName(pageList: { sourceId: string }[]) {
   const { sources } = useStore.getState()
   const ids = new Set(pageList.map((p) => p.sourceId))
   return ids.size === 1 ? sources[[...ids][0]].name : 'merged'
 }
 
-function download(bytes: Uint8Array, name: string, type: string) {
+export function download(bytes: Uint8Array, name: string, type: string) {
   const url = URL.createObjectURL(new Blob([bytes], { type }))
   const a = document.createElement('a')
   a.href = url
@@ -35,7 +35,7 @@ export async function exportPdf() {
   const name = base === 'merged' ? 'merged.pdf' : `${base}-edited.pdf`
   st.setBusy('Exporting')
   try {
-    const [file] = await runJob('merge', list, name)
+    const [file] = (await runJob('merge', list, name)).files
     download(file.bytes, file.name, 'application/pdf')
     st.notify(`Exported ${file.name}`)
   } catch (e) {
@@ -52,7 +52,7 @@ export async function splitPages() {
   if (list.length === 1) return exportPdf()
   st.setBusy('Splitting')
   try {
-    const [file] = await runJob('split', list, baseName(list))
+    const [file] = (await runJob('split', list, baseName(list))).files
     download(file.bytes, file.name, 'application/zip')
     st.notify(`Split into ${list.length} PDFs`)
   } catch (e) {
@@ -89,3 +89,8 @@ export function pickFiles() {
 
 export const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent)
 export const MOD = isMac ? '⌘' : 'Ctrl'
+
+export function formatBytes(n: number) {
+  if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`
+  return `${(n / 1024 / 1024).toFixed(n < 10 * 1024 * 1024 ? 1 : 0)} MB`
+}
