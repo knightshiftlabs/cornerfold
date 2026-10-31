@@ -1,5 +1,5 @@
 import { useStore, type Page, type Source } from './store'
-import { openPdf } from './pdf'
+import { EngineError, openPdf, releaseSource } from './pdf'
 import { stage } from './motion'
 import { getWorker } from './engine'
 
@@ -8,7 +8,15 @@ const isPdf = (f: File) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name
 const isImage = (f: File) => f.type.startsWith('image/')
 const stem = (name: string) => name.replace(/\.[^.]+$/, '') || 'file'
 
-class LockedError extends Error {}
+class PasswordError extends Error {}
+class RestrictedError extends Error {}
+class EmptyError extends Error {}
+class UnsupportedImageError extends Error {
+  constructor(readonly heic: boolean) {
+    super()
+  }
+}
+const isHeic = (f: File) => /hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name)
 
 export async function ingestFiles(files: File[]) {
   const st = useStore.getState()
@@ -22,6 +30,7 @@ export async function ingestFiles(files: File[]) {
 
   st.setBusy(usable.length === 1 ? 'Reading file' : `Reading ${usable.length} files`)
   const problems: string[] = []
+  const signed: string[] = []
   const results = await Promise.all(
     usable.map((f) =>
       readFile(f).catch((e: unknown) => {
@@ -38,52 +47,87 @@ export async function ingestFiles(files: File[]) {
     if (!r) continue
     sources.push(r.source)
     pages.push(...r.pages)
+    if (r.signed) signed.push(r.fileName)
   }
   if (pages.length) {
     stage(pages.map((p) => p.id))
     st.addPages(sources, pages)
-    // Spin up the PDF engine in the background so the first export doesn't wait for it.
-    const idle = window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 300))
-    idle(() => getWorker())
+    getWorker() // normally already running; started at load
   }
 
   if (problems.length) {
     st.notify(problems.length === 1 ? problems[0] : `${problems[0]} ${problems.length - 1} more couldn’t be added.`, { tone: 'error' })
+  } else if (signed.length) {
+    st.notify(
+      `${signed.length === 1 ? `${signed[0]} is` : `${signed.length} of these files are`} digitally signed. Any change, even compressing, will make the signature invalid, though the pages will look the same.`,
+      { tone: 'error' },
+    )
   } else if (skipped) {
     st.notify(`Skipped ${skipped} ${skipped === 1 ? 'file that isn’t' : 'files that aren’t'} a PDF or image.`, { tone: 'error' })
   }
 }
 
-async function readFile(f: File): Promise<{ source: Source; pages: Page[] }> {
+async function readFile(f: File): Promise<{ source: Source; pages: Page[]; signed: boolean; fileName: string }> {
   const id = uid()
+  if (!f.size) throw new EmptyError()
   if (isPdf(f)) {
     const bytes = new Uint8Array(await f.arrayBuffer())
-    if (isEncrypted(bytes)) throw new LockedError()
+    if (contains(bytes, '/Encrypt')) {
+      // Encrypted PDFs: either a password is needed to open them, or they open freely but
+      // carry editing restrictions (common for bank statements). Neither can be edited yet.
+      let opened = false
+      try {
+        await openPdf(id, bytes)
+        opened = true
+      } catch (e) {
+        if (e instanceof Error && e.name === 'PasswordException') throw new PasswordError()
+        throw e
+      } finally {
+        releaseSource(id)
+      }
+      if (opened) throw new RestrictedError()
+    }
     const doc = await openPdf(id, bytes)
     return {
       source: { id, name: stem(f.name), kind: 'pdf', bytes, pageCount: doc.numPages },
       pages: Array.from({ length: doc.numPages }, (_, index) => ({ id: uid(), sourceId: id, index, rotation: 0 })),
+      signed: contains(bytes, '/ByteRange'), // every digital signature records the byte range it covers
+      fileName: f.name,
     }
   }
-  const img = await normalizeImage(f)
+  let img
+  try {
+    img = await normalizeImage(f)
+  } catch {
+    throw new UnsupportedImageError(isHeic(f))
+  }
   return {
     source: { id, name: stem(f.name), kind: 'image', pageCount: 1, ...img },
     pages: [{ id: uid(), sourceId: id, index: 0, rotation: 0 }],
+    signed: false,
+    fileName: f.name,
   }
 }
 
 function describe(f: File, e: unknown) {
-  if (e instanceof LockedError || (e instanceof Error && e.name === 'PasswordException')) {
-    return `${f.name} is password-protected, so it can’t be edited yet.`
-  }
-  return `Couldn’t read ${f.name}. It may be damaged.`
+  if (e instanceof EmptyError) return `${f.name} is empty.`
+  if (e instanceof PasswordError) return `${f.name} needs a password to open. Remove the password in the app that made it, then try again.`
+  if (e instanceof RestrictedError)
+    return `${f.name} has editing restrictions set by whoever made it, which is common for bank statements. Cornerfold can’t edit restricted PDFs yet.`
+  if (e instanceof UnsupportedImageError)
+    return e.heic
+      ? `${f.name} is an iPhone photo (HEIC), which this browser can’t open. Share it as a JPEG instead, or set your iPhone camera to “Most Compatible”.`
+      : `${f.name} is in an image format this browser can’t open. Try a JPEG or PNG.`
+  if (e instanceof EngineError) return 'Cornerfold was updated while this tab was open. Reload the page, then add your files again.'
+  return `Couldn’t read ${f.name}. It may be damaged, or it may not really be a PDF.`
 }
 
-/** Encrypted PDFs carry /Encrypt in their (always uncompressed) trailer. */
-function isEncrypted(b: Uint8Array) {
-  const needle = [0x2f, 0x45, 0x6e, 0x63, 0x72, 0x79, 0x70, 0x74] // "/Encrypt"
+/** Byte search for an ASCII marker, without decoding the whole file as text. */
+function contains(b: Uint8Array, marker: string) {
+  const needle = [...marker].map((c) => c.charCodeAt(0))
+  const first = needle[0]
   outer: for (let i = 0; i <= b.length - needle.length; i++) {
-    if (b[i] !== 0x2f) continue
+    if (b[i] !== first) continue
     for (let j = 1; j < needle.length; j++) if (b[i + j] !== needle[j]) continue outer
     return true
   }

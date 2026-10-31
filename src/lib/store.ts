@@ -57,6 +57,10 @@ interface State {
 const HISTORY_LIMIT = 100
 let toastSeq = 0
 
+// Set by the app so the store can free memory without importing the PDF engine.
+let releaseHandler: (ids: string[]) => void = () => {}
+export const onRelease = (fn: (ids: string[]) => void) => (releaseHandler = fn)
+
 const keepExisting = (selected: Set<string>, pages: Page[]) => {
   const ids = new Set(pages.map((p) => p.id))
   return new Set([...selected].filter((id) => ids.has(id)))
@@ -64,13 +68,28 @@ const keepExisting = (selected: Set<string>, pages: Page[]) => {
 
 export const useStore = create<State>((set, get) => {
   /** Every edit to the page list goes through here, so every edit is undoable. */
-  const commit = (pages: Page[]) =>
+  const commit = (pages: Page[]) => {
     set((s) => ({
       pages,
       past: [...s.past.slice(-(HISTORY_LIMIT - 1)), s.pages],
       future: [],
       selected: keepExisting(s.selected, pages),
     }))
+    collect()
+  }
+
+  /** Drop files that neither the page list nor any undo or redo step uses, and free their memory. */
+  const collect = () => {
+    const s = get()
+    const used = new Set<string>()
+    for (const list of [s.pages, ...s.past, ...s.future]) for (const p of list) used.add(p.sourceId)
+    const unused = Object.keys(s.sources).filter((id) => !used.has(id))
+    if (!unused.length) return
+    const sources = { ...s.sources }
+    for (const id of unused) delete sources[id]
+    set({ sources })
+    releaseHandler(unused)
+  }
 
   return {
     sources: {},

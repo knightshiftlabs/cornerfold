@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowDownToLine, Check, LoaderCircle, X } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { runJob, type JobOptions } from '../lib/engine'
-import { baseName, download, formatBytes, targets } from '../lib/actions'
+import { baseName, download, formatBytes, parseSize, targets } from '../lib/actions'
 import { Button, IconButton } from './ui'
 
 type Choice = 'light' | 'balanced' | 'smallest' | 'target'
@@ -29,6 +29,7 @@ function Panel() {
   const [choice, setChoice] = useState<Choice>('balanced')
   const [limitKb, setLimitKb] = useState<number | null>(null)
   const [custom, setCustom] = useState('')
+  const [customError, setCustomError] = useState<string | null>(null)
   const alive = useRef(true)
   const panel = useRef<HTMLDivElement>(null)
 
@@ -66,8 +67,10 @@ function Panel() {
   }
 
   const applyCustom = () => {
-    const kb = Math.round(parseFloat(custom) * (/mb/i.test(custom) ? 1024 : 1))
-    if (kb >= 10) fitUnder(kb)
+    const parsed = parseSize(custom)
+    if ('error' in parsed) return setCustomError(parsed.error)
+    setCustomError(null)
+    fitUnder(parsed.kb)
   }
 
   const picked = results[choice]
@@ -146,7 +149,7 @@ function Panel() {
               </button>
             ))}
             <form
-              className="flex h-9 items-center rounded-full border border-line pl-3.5 pr-1 focus-within:border-ink"
+              className={`flex h-9 items-center rounded-full border pl-3.5 pr-1 focus-within:border-ink ${customError ? 'border-fg' : 'border-line'}`}
               onSubmit={(e) => {
                 e.preventDefault()
                 applyCustom()
@@ -154,9 +157,14 @@ function Panel() {
             >
               <input
                 value={custom}
-                onChange={(e) => setCustom(e.target.value)}
+                onChange={(e) => {
+                  setCustom(e.target.value)
+                  setCustomError(null)
+                }}
                 placeholder="e.g. 300 KB"
                 aria-label="Custom size limit, in KB or MB"
+                aria-invalid={customError !== null}
+                aria-describedby={customError ? 'size-error' : undefined}
                 className="w-24 bg-transparent text-sm outline-none placeholder:text-muted"
               />
               <button type="submit" className="h-7 rounded-full px-2.5 text-sm font-semibold text-ink hover:bg-desk-2">
@@ -164,6 +172,11 @@ function Panel() {
               </button>
             </form>
           </div>
+          {customError && (
+            <p id="size-error" role="alert" className="mt-2 text-sm font-medium">
+              {customError}
+            </p>
+          )}
         </div>
 
         {alreadyCompact && (
