@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/* Palette: a cool light-table desk, white paper, ultramarine ink, highlighter yellow for selection. */
+:root {
+  --desk: #dce2ea;
+  --desk-2: #cbd3de;
+  --paper: #ffffff;
+  --ink: #2433d6;
+  --ink-press: #1a27b0;
+  --hi: #ffe44d;
+  --text: #1d2532;
+  --muted: #4f5b6c;
+  --line: rgb(29 37 50 / 0.12);
+  --paper-shadow: 0 0.5px 1px rgb(16 24 40 / 0.12), 0 2px 4px -1px rgb(16 24 40 / 0.08), 0 12px 20px -10px rgb(16 24 40 / 0.28);
+  --lifted-shadow: 0 1px 2px rgb(16 24 40 / 0.12), 0 24px 40px -12px rgb(16 24 40 / 0.4);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --desk: #161d27;
+    --desk-2: #222b38;
+    --ink: #3a49f0;
+    --ink-press: #2d3bd8;
+    --text: #e6ebf2;
+    --muted: #97a3b4;
+    --line: rgb(230 235 242 / 0.12);
+    --paper-shadow: 0 0.5px 1px rgb(0 0 0 / 0.4), 0 12px 20px -10px rgb(0 0 0 / 0.7);
+    --lifted-shadow: 0 24px 40px -12px rgb(0 0 0 / 0.8);
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-desk: var(--desk);
+  --color-desk-2: var(--desk-2);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-press: var(--ink-press);
+  --color-hi: var(--hi);
+  --color-fg: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
+html, body, #root { min-height: 100%; }
+body {
+  background: var(--desk);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wordmark { font-weight: 700; font-size: 1.45rem; letter-spacing: -0.045em; line-height: 1; }
+
+.headline {
+  font-weight: 650;
+  font-size: clamp(2.6rem, 7vw, 5.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+kbd {
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--desk-2);
+  border: 1px solid var(--line);
+}
+
+/* ---- Pages ---- */
+.card { border-radius: 14px; padding: 10px 10px 8px; transition: background-color 120ms ease; }
+.card.is-selected { background: var(--hi); color: #1d2532; }
+.card.is-selected .card-src { color: #5a5222; }
+.card.is-lifted { transform: rotate(-2.5deg) scale(1.04); cursor: grabbing; }
+
+.sheet-box { position: relative; aspect-ratio: 1; }
+.sheet {
+  position: absolute; inset: 0; margin: auto;
+  max-width: 100%; max-height: 100%;
+  background: var(--paper);
+  border-radius: 2px;
+  box-shadow: var(--paper-shadow);
+  transition: transform 340ms cubic-bezier(0.34, 1.45, 0.5, 1), box-shadow 200ms ease;
+}
+.sheet.is-blank { width: 70.7%; height: 100%; }
+.is-lifted .sheet { box-shadow: var(--lifted-shadow); }
+
+/* The one orchestrated moment: sheets land on the desk and settle flat. */
+.sheet-enter { animation: land 520ms cubic-bezier(0.2, 0.9, 0.25, 1.12) both; animation-delay: var(--d, 0ms); }
+@keyframes land {
+  from { opacity: 0; transform: translateY(-30px) rotate(var(--tilt, 0deg)) scale(1.06); }
+  55% { opacity: 1; }
+  to { opacity: 1; transform: none; }
+}
+
+.toast-in { animation: toast 220ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+@keyframes toast { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+.spin { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-enter, .toast-in { animation-duration: 1ms; animation-delay: 0ms; }
+  .sheet, .card { transition: none; }
+  .card.is-lifted { transform: none; }
+}
