@@ -8,6 +8,16 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-31
+
+### Added
+- Terms of use.
+- Open-source licenses page listing every third-party package Cornerfold ships with, generated on every build.
+- The current version number, with links to the terms, licenses and contact, at the bottom of the home screen.
+
+### Changed
+- Privacy policy: explains how browser “Do Not Track” and Global Privacy Control signals are handled, and covers the UK GDPR alongside the EU GDPR and India’s DPDP Act.
+
 ## [1.0.0] - 2026-10-31
 
 First public release.

@@ -70,6 +70,7 @@ const html = `<!doctype html>
   h3 { font-size: 1rem; margin: 1.6em 0 0.3em; }
   ul { padding-left: 1.2em; margin: 0; } li { margin: 0.25em 0; }
   a { color: var(--ink); } code { font-size: .9em; }
+  footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: .9rem; }
 </style>
 </head>
 <body>
@@ -78,6 +79,13 @@ const html = `<!doctype html>
   <h1>What’s new</h1>
   <p class="muted">You’re on version ${esc(version)}. Every release is listed here, newest first.</p>
   ${out.join('\n  ')}
+  <footer>
+    <a href="/">Cornerfold</a>
+    <a href="/changes.html">What’s new</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+    <a href="/licenses.txt">Open-source licenses</a>
+  </footer>
 </main>
 </body>
 </html>

@@ -18,13 +18,26 @@
   h3 { font-size: 1rem; margin: 1.6em 0 0.3em; }
   ul { padding-left: 1.2em; margin: 0; } li { margin: 0.25em 0; }
   a { color: var(--ink); } code { font-size: .9em; }
+  footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: .9rem; }
 </style>
 </head>
 <body>
 <main>
   <p><a href="/">Back to Cornerfold</a></p>
   <h1>What’s new</h1>
-  <p class="muted">You’re on version 1.0.0. Every release is listed here, newest first.</p>
+  <p class="muted">You’re on version 1.0.1. Every release is listed here, newest first.</p>
+  <section id="v1.0.1"><h2>Version 1.0.1</h2><p class="date">31 October 2026</p>
+  <h3>Added</h3>
+  <ul>
+  <li>Terms of use.</li>
+  <li>Open-source licenses page listing every third-party package Cornerfold ships with, generated on every build.</li>
+  <li>The current version number, with links to the terms, licenses and contact, at the bottom of the home screen.</li>
+  </ul>
+  <h3>Changed</h3>
+  <ul>
+  <li>Privacy policy: explains how browser “Do Not Track” and Global Privacy Control signals are handled, and covers the UK GDPR alongside the EU GDPR and India’s DPDP Act.</li>
+  </ul>
+  </section>
   <section id="v1.0.0"><h2>Version 1.0.0</h2><p class="date">31 October 2026</p>
   <p>First public release.</p>
   <h3>Added</h3>
@@ -43,6 +56,13 @@
   <li>Exported PDFs carry no author, creator or producer metadata.</li>
   </ul>
   </section>
+  <footer>
+    <a href="/">Cornerfold</a>
+    <a href="/changes.html">What’s new</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+    <a href="/licenses.txt">Open-source licenses</a>
+  </footer>
 </main>
 </body>
 </html>

@@ -6,14 +6,15 @@
 <title>Privacy: Cornerfold</title>
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <style>
-  :root { --desk:#dce2ea; --text:#1d2532; --muted:#4f5b6c; --ink:#2433d6; color-scheme: light dark; }
-  @media (prefers-color-scheme: dark) { :root { --desk:#161d27; --text:#e6ebf2; --muted:#97a3b4; --ink:#8f9bff; } }
+  :root { --desk:#dce2ea; --text:#1d2532; --muted:#4f5b6c; --ink:#2433d6; --line:rgb(29 37 50 / .14); color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) { :root { --desk:#161d27; --text:#e6ebf2; --muted:#97a3b4; --ink:#8f9bff; --line:rgb(230 235 242 / .14); } }
   body { margin:0; background:var(--desk); color:var(--text); font: 17px/1.65 ui-sans-serif, system-ui, sans-serif; }
   main { max-width: 64ch; margin: 0 auto; padding: 56px 24px 96px; }
   h1 { font-size: 2.4rem; line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 8px; }
   h2 { font-size: 1.15rem; margin: 2.2em 0 0.4em; }
   p, li { color: var(--text); } .muted { color: var(--muted); }
   a { color: var(--ink); }
+  footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: .9rem; }
 </style>
 </head>
 <body>
@@ -28,6 +29,7 @@
   <h2>What we collect</h2>
   <p>Nothing about you or your documents. We use no accounts, no cookies, no analytics, no advertising, and no third-party scripts or fonts.</p>
   <p>To work offline, the app saves its own code in your browser’s storage. That storage holds only the app itself, never your files or any information about you, and you can clear it at any time from your browser settings.</p>
+  <p>Because Cornerfold tracks nothing, “Do Not Track” and Global Privacy Control signals from your browser have nothing to switch off. You get that result whether or not you send them.</p>
 
   <h2>What our host sees</h2>
   <p>Cornerfold is hosted by Cloudflare, Inc. on Cloudflare Pages. Like any web host, it handles your IP address and browser details in order to deliver the site, and may keep short-lived logs for security and reliability. That is the only personal data involved in using Cornerfold. It is processed under our legitimate interest in operating a secure website (GDPR Art. 6(1)(f)), under Cloudflare’s data processing addendum. See <a href="https://www.cloudflare.com/privacypolicy/" rel="noreferrer">Cloudflare’s privacy policy</a> for how they handle this data and how long they keep it.</p>
@@ -36,13 +38,20 @@
   <p>Exported PDFs are created on your device and saved straight to it. We strip document metadata such as author and creator fields from the files we produce.</p>
 
   <h2>Your rights</h2>
-  <p>Under the GDPR and India’s Digital Personal Data Protection Act you can ask what personal data we hold about you, and ask us to correct or delete it. Because we hold none, the answer will almost always be “nothing”, but you are welcome to ask. You can also complain to your local data protection authority.</p>
+  <p>Under the EU GDPR, the UK GDPR and India’s Digital Personal Data Protection Act you can ask what personal data we hold about you, and ask us to correct or delete it. Because we hold none, the answer will almost always be “nothing”, but you are welcome to ask. You can also complain to your local data protection authority.</p>
 
   <h2>Who is responsible</h2>
   <p>Cornerfold is run by Utkarsh Sinha, an individual developer based in India, who is responsible for this service under the GDPR and India’s DPDP Act. For any privacy question or request, write to <a href="mailto:sinhautkarsh.1@gmail.com">sinhautkarsh.1@gmail.com</a>.</p>
 
   <h2>Changes to this policy</h2>
   <p>If a future feature needs to process files on a server (for example, converting Word documents), it will be clearly labelled before you use it, and this page will be updated first. Every change to this policy is listed, with its date, in the <a href="/changes.html">release history</a>.</p>
+  <footer>
+    <a href="/">Cornerfold</a>
+    <a href="/changes.html">What’s new</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+    <a href="/licenses.txt">Open-source licenses</a>
+  </footer>
 </main>
 </body>
 </html>

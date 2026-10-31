@@ -52,7 +52,9 @@ While working, add each user-facing change under `## [Unreleased]`, in plain lan
 3. Bump the version, which commits and tags it: `npm version 1.1.0 -m "Release %s"`.
 4. Publish with the tag: `git push --follow-tags`.
 
-Any change to the privacy policy gets its own changelog line, and the "Last updated" date on the policy changes with it.
+Every build also regenerates `public/licenses.txt` (the open-source notices) from the installed packages, so adding a dependency updates it automatically.
+
+Any change to the privacy policy or terms gets its own changelog line, and the "Last updated" date on that page changes with it.
 
 ## Shortcuts
 
