@@ -5,8 +5,8 @@ import { Button } from './ui'
 
 export function EmptyState() {
   return (
-    <section className="grid min-h-[calc(100dvh-4rem)] items-center px-6 py-16 sm:px-12">
-      <div className="mx-auto grid w-full max-w-6xl items-center gap-16 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+    <section className="flex min-h-[calc(100dvh-4rem)] flex-col px-6 sm:px-12">
+      <div className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-16 py-16 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <div>
           <h1 className="headline max-w-[11ch]">Drop PDFs and images anywhere.</h1>
           <p className="mt-7 max-w-[46ch] text-lg leading-relaxed text-muted sm:text-xl">
@@ -25,6 +25,20 @@ export function EmptyState() {
         </div>
         <PaperStack />
       </div>
+      <footer className="mx-auto flex w-full max-w-6xl flex-wrap gap-x-6 gap-y-1 pb-6 text-sm text-muted">
+        <a href="/changes.html" className="hover:text-fg">
+          Cornerfold {__APP_VERSION__}
+        </a>
+        <a href="/terms.html" className="hover:text-fg">
+          Terms
+        </a>
+        <a href="/licenses.txt" className="hover:text-fg">
+          Open-source licenses
+        </a>
+        <a href="mailto:sinhautkarsh.1@gmail.com" className="hover:text-fg">
+          Contact
+        </a>
+      </footer>
     </section>
   )
 }

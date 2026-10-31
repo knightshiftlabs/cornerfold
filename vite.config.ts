@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // Shown in the app footer. npm sets this when the build runs through `npm run`.
+  define: { __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? 'dev') },
   plugins: [
     react(),
     tailwindcss(),
@@ -26,10 +28,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,mjs,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,mjs,css,html,svg,png,woff2,txt}'],
         // pdf.js worker is ~1 MB; cache it so the app works fully offline.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-        navigateFallbackDenylist: [/^\/privacy/, /^\/changes/],
+        navigateFallbackDenylist: [/^\/privacy/, /^\/changes/, /^\/terms/, /^\/licenses/],
       },
     }),
   ],

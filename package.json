@@ -1,11 +1,12 @@
 {
-  "name": "fold",
+  "name": "cornerfold",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "changelog": "node scripts/changelog.mjs",
+    "dev": "node scripts/changelog.mjs && vite",
+    "build": "node scripts/changelog.mjs && node scripts/licenses.mjs && tsc && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -30,8 +31,5 @@
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
     "vite-plugin-pwa": "^0.21.1"
-  },
-  "allowScripts": {
-    "esbuild@0.25.12": true
   }
 }
