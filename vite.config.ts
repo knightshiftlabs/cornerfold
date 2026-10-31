@@ -12,8 +12,8 @@ export default defineConfig({
       // External script, not inline, so the strict CSP holds.
       injectRegister: 'script',
       manifest: {
-        name: 'fold',
-        short_name: 'fold',
+        name: 'Cornerfold',
+        short_name: 'Cornerfold',
         description: 'Merge, split, reorder and rotate PDFs. Files never leave your device.',
         theme_color: '#DCE2EA',
         background_color: '#DCE2EA',
@@ -29,7 +29,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,mjs,css,html,svg,png,woff2}'],
         // pdf.js worker is ~1 MB; cache it so the app works fully offline.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-        navigateFallbackDenylist: [/^\/privacy/],
+        navigateFallbackDenylist: [/^\/privacy/, /^\/changes/],
       },
     }),
   ],

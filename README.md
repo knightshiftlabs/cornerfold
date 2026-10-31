@@ -1,6 +1,8 @@
-# fold
+# Cornerfold
 
-Merge, split, reorder and rotate PDFs and images, entirely in the browser. Working name; rename freely.
+Merge, split, reorder and rotate PDFs and images, entirely in the browser.
+
+Live at https://cornerfold.pages.dev
 
 **Pillars:** private (files never leave the device), a UI people enjoy, no ads.
 
@@ -36,6 +38,21 @@ The whole v1 is one idea: every tool is "arrange a list of pages, then write it 
 Files never leave the device: there is no upload code, and the CSP `connect-src 'self'` with no backend means the browser blocks exfiltration even if a dependency misbehaved. No third parties: fonts and the pdf.js worker are bundled and self-hosted, and the CSP allows only `'self'`. No cookies or analytics, so no consent banner is needed. It works offline: the service worker precaches the app after the first visit. Metadata is stripped: `updateMetadata: false` on output documents.
 
 The remaining personal data is the host's IP logs. Disclose them in the privacy policy and keep the host's DPA on file.
+
+## Versioning and releases
+
+Cornerfold follows [Semantic Versioning](https://semver.org). For an app people use rather than code people import, that means: a **major** version (2.0.0) for changes that alter how people work with it or remove something they relied on; a **minor** version (1.1.0) for new tools or features; a **patch** version (1.0.1) for fixes.
+
+`CHANGELOG.md` is the single source of truth. Every build turns it into the public page at `/changes.html`, so never edit that page directly.
+
+While working, add each user-facing change under `## [Unreleased]`, in plain language a user would understand. To release:
+
+1. In `CHANGELOG.md`, rename `## [Unreleased]` to the new version and date, e.g. `## [1.1.0] - 2026-11-15`, and add a fresh empty `## [Unreleased]` above it.
+2. Commit that: `git add .` then `git commit -m "Changelog for 1.1.0"`.
+3. Bump the version, which commits and tags it: `npm version 1.1.0 -m "Release %s"`.
+4. Publish with the tag: `git push --follow-tags`.
+
+Any change to the privacy policy gets its own changelog line, and the "Last updated" date on the policy changes with it.
 
 ## Shortcuts
 

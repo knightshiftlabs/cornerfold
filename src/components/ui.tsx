@@ -32,7 +32,7 @@ export function Wordmark() {
         <path d="M19 13h18l10 10v28H19z" fill="#fff" />
         <path d="M37 13v10h10z" fill="var(--hi)" />
       </svg>
-      <span className="wordmark">fold</span>
+      <span className="wordmark">cornerfold</span>
     </span>
   )
 }
