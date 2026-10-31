@@ -6,8 +6,8 @@ import { deleteSelected, exportPdf, pickFiles, rotateTargets } from './actions'
 export function useShortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement
-      if (el.closest('input, textarea, [contenteditable="true"]')) return
+      const el = e.target
+      if (el instanceof Element && el.closest('input, textarea, [contenteditable="true"]')) return
       const st = useStore.getState()
       if (st.compressOpen) return
       const mod = e.metaKey || e.ctrlKey

@@ -24,7 +24,8 @@ export function IconButton({ label, children, className = '', ...rest }: ButtonH
   )
 }
 
-export function Wordmark() {
+/** On small screens with a busy toolbar, `compact` shows just the mark. */
+export function Wordmark({ compact = false }: { compact?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2">
       <svg viewBox="0 0 64 64" className="size-7" aria-hidden="true">
@@ -32,7 +33,7 @@ export function Wordmark() {
         <path d="M19 13h18l10 10v28H19z" fill="#fff" />
         <path d="M37 13v10h10z" fill="var(--hi)" />
       </svg>
-      <span className="wordmark">cornerfold</span>
+      <span className={`wordmark ${compact ? 'hidden sm:inline' : ''}`}>cornerfold</span>
     </span>
   )
 }

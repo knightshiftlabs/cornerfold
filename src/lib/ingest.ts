@@ -1,6 +1,7 @@
 import { useStore, type Page, type Source } from './store'
 import { openPdf } from './pdf'
 import { stage } from './motion'
+import { getWorker } from './engine'
 
 const uid = () => crypto.randomUUID()
 const isPdf = (f: File) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name)
@@ -41,6 +42,9 @@ export async function ingestFiles(files: File[]) {
   if (pages.length) {
     stage(pages.map((p) => p.id))
     st.addPages(sources, pages)
+    // Spin up the PDF engine in the background so the first export doesn't wait for it.
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 300))
+    idle(() => getWorker())
   }
 
   if (problems.length) {

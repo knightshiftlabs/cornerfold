@@ -10,7 +10,7 @@ let seq = 0
 const sent = new Set<string>() // sources the worker already holds; bytes cross the boundary once
 const waiting = new Map<number, Waiter>()
 
-function getWorker() {
+export function getWorker() {
   if (worker) return worker
   worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
   worker.onmessage = (e) => {

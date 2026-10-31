@@ -2,6 +2,7 @@ import { ArrowDownToLine, LoaderCircle, Plus, Redo2, RotateCw, Scissors, Shrink,
 import { useStore } from '../lib/store'
 import { deleteSelected, exportPdf, pickFiles, rotateTargets, splitPages } from '../lib/actions'
 import { Button, IconButton, Wordmark } from './ui'
+import { PrivacyBadge } from './PrivacyBadge'
 
 export function TopBar() {
   const pages = useStore((s) => s.pages)
@@ -19,8 +20,9 @@ export function TopBar() {
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-2 border-b border-line bg-desk/85 px-3 backdrop-blur-md sm:gap-4 sm:px-8">
       <a href="/" className="rounded-lg focus-visible:outline-2 focus-visible:outline-ink" aria-label="Cornerfold home">
-        <Wordmark />
+        <Wordmark compact={pages.length > 0} />
       </a>
+      {pages.length > 0 && <PrivacyBadge />}
 
       <div className="hidden min-w-0 text-sm text-muted md:block" aria-live="polite">
         {busy ? (

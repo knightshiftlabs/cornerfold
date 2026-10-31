@@ -1,6 +1,6 @@
 # Cornerfold
 
-Merge, split, reorder and rotate PDFs and images, entirely in the browser.
+PDF tools that never see your files. Merge, split, compress, reorder and rotate PDFs and images entirely in the browser: nothing uploaded, no tracking, no account.
 
 Live at https://cornerfold.pages.dev
 
