@@ -45,6 +45,8 @@ The remaining personal data is the host's IP logs. Disclose them in the privacy 
 detection, size parsing, editing and undo, and the interface in a simulated browser. See
 `tests/README.md` for what each file covers and the rules for adding tests.
 
+**On GitHub:** every push runs the tests and the build on a clean Linux machine (`.github/workflows/ci.yml`). A red cross next to a commit means something broke; Cloudflare will still deploy it, so fix it straight away.
+
 **Release criteria:** no release unless `npm test` passes and the production build succeeds. This is
 enforced: `npm version patch`, `minor` or `major` runs both first and stops, with no version bump and
 no tag, if either fails. Every bug fix gets a regression test. Releases that touch
@@ -75,10 +77,16 @@ Any change to the privacy policy or terms gets its own changelog line, and the "
 
 ## Roadmap
 
-v2: compression (qpdf or Ghostscript compiled to WASM; add `'wasm-unsafe-eval'` to `script-src`), unlock/protect, page numbers, watermark, PDF-to-images, PNG icons for full PWA install support.
+See `CHANGELOG.md` for everything that has shipped (merge, split, reorder, rotate, images to PDF, compression with size targets, installable offline app).
 
-v3: Office-to-PDF via headless LibreOffice on Cloud Run (EU region, in-memory only, opt-in and clearly labelled as the one tool that uploads). Update the CSP's `connect-src` and the privacy policy before shipping it.
+Next: browser-level testing in a real browser, fuzzing and malicious-file tests (see "Testing").
+
+Then (1.2): fill and sign, and PDF to images.
+
+Later: page numbers and watermarks; protect and unlock (needs a PDF encryption library compiled to WebAssembly, which means adding `'wasm-unsafe-eval'` to `script-src` and saying so in the privacy policy).
+
+Not planned: anything that needs a server to process files, such as converting Word documents. It would break the core promise that files never leave the device.
 
 ## Known limits
 
-Requires a modern browser (Chrome/Edge 119+, Safari 17.4+, Firefox 121+). Encrypted PDFs are rejected until unlock lands. Images are placed at 96 dpi page size; no paper-size options yet.
+Requires a modern browser (Chrome/Edge 119+, Safari 17.4+, Firefox 121+). PDFs that need a password, or carry editing restrictions, can't be edited yet. Compression leaves CMYK (print) and some rarer image types untouched. iPhone HEIC photos only open in browsers that can decode them, mainly Safari. Images become pages at 96 dpi; there are no paper-size options yet.
