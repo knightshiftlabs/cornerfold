@@ -2,7 +2,7 @@
 
 PDF tools that never see your files. Merge, split, compress, reorder and rotate PDFs and images entirely in the browser: nothing uploaded, no tracking, no account.
 
-Live at https://cornerfold.pages.dev
+Live at https://cornerfold.org
 
 **Pillars:** private (files never leave the device), a UI people enjoy, no ads.
 
@@ -53,6 +53,8 @@ While working, add each user-facing change under `## [Unreleased]`, in plain lan
 4. Publish with the tag: `git push --follow-tags`.
 
 Every build also regenerates `public/licenses.txt` (the open-source notices) from the installed packages, so adding a dependency updates it automatically.
+
+`public/.well-known/security.txt` has an `Expires` date (currently 31 October 2027). Renew it before then, or security researchers will treat it as stale.
 
 Any change to the privacy policy or terms gets its own changelog line, and the "Last updated" date on that page changes with it.
 
