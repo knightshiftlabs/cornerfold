@@ -33,7 +33,7 @@ export default defineConfig({
         globIgnores: ['og.png'],
         // pdf.js worker is ~1 MB; cache it so the app works fully offline.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-        navigateFallbackDenylist: [/^\/privacy/, /^\/changes/, /^\/terms/, /^\/licenses/, /^\/\.well-known/],
+        navigateFallbackDenylist: [/^\/privacy/, /^\/about/, /^\/changes/, /^\/terms/, /^\/licenses/, /^\/\.well-known/],
       },
     }),
   ],

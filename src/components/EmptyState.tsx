@@ -45,6 +45,9 @@ export function EmptyState() {
         <a href="/changes.html" className="hover:text-fg">
           Cornerfold {__APP_VERSION__}
         </a>
+        <a href="/about.html" className="hover:text-fg">
+          About
+        </a>
         <a href="/terms.html" className="hover:text-fg">
           Terms
         </a>
