@@ -16,7 +16,7 @@ export default defineConfig({
       manifest: {
         name: 'Cornerfold',
         short_name: 'Cornerfold',
-        description: 'Merge, split, reorder and rotate PDFs. Files never leave your device.',
+        description: 'Merge, split, compress, reorder and rotate PDFs. Files never leave your device.',
         theme_color: '#DCE2EA',
         background_color: '#DCE2EA',
         display: 'standalone',

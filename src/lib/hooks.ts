@@ -9,6 +9,7 @@ export function useShortcuts() {
       const el = e.target as HTMLElement
       if (el.closest('input, textarea, [contenteditable="true"]')) return
       const st = useStore.getState()
+      if (st.compressOpen) return
       const mod = e.metaKey || e.ctrlKey
       const k = e.key.toLowerCase()
 
@@ -55,6 +56,7 @@ export function useFileDrop() {
       e.preventDefault()
       depth = 0
       setOver(false)
+      if (useStore.getState().compressOpen) return
       ingestFiles([...e.dataTransfer!.files])
     }
     window.addEventListener('dragenter', enter)
@@ -76,7 +78,7 @@ export function usePaste() {
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       const files = [...(e.clipboardData?.files ?? [])]
-      if (!files.length) return
+      if (!files.length || useStore.getState().compressOpen) return
       e.preventDefault()
       ingestFiles(files)
     }

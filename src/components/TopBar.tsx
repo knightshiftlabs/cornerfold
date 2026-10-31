@@ -1,4 +1,4 @@
-import { ArrowDownToLine, LoaderCircle, Plus, Redo2, RotateCw, Scissors, Trash2, Undo2, X } from 'lucide-react'
+import { ArrowDownToLine, LoaderCircle, Plus, Redo2, RotateCw, Scissors, Shrink, Trash2, Undo2, X } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { deleteSelected, exportPdf, pickFiles, rotateTargets, splitPages } from '../lib/actions'
 import { Button, IconButton, Wordmark } from './ui'
@@ -64,6 +64,10 @@ export function TopBar() {
               </Button>
             )}
 
+            <Button onClick={() => useStore.getState().setCompressOpen(true)} disabled={!!busy} aria-label="Compress">
+              <Shrink />
+              <span className="hidden sm:inline">Compress</span>
+            </Button>
             <Button onClick={splitPages} disabled={!!busy || pages.length < 2} aria-label="Split into separate PDFs" className="hidden sm:inline-flex">
               <Scissors />
               Split
