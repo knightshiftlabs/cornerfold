@@ -1,5 +1,6 @@
 import { useStore, type Page, type Source } from './store'
 import { EngineError, openPdf, releaseSource } from './pdf'
+import { contains } from './bytes'
 import { stage } from './motion'
 import { getWorker } from './engine'
 
@@ -122,17 +123,6 @@ function describe(f: File, e: unknown) {
   return `Couldn’t read ${f.name}. It may be damaged, or it may not really be a PDF.`
 }
 
-/** Byte search for an ASCII marker, without decoding the whole file as text. */
-function contains(b: Uint8Array, marker: string) {
-  const needle = [...marker].map((c) => c.charCodeAt(0))
-  const first = needle[0]
-  outer: for (let i = 0; i <= b.length - needle.length; i++) {
-    if (b[i] !== first) continue
-    for (let j = 1; j < needle.length; j++) if (b[i + j] !== needle[j]) continue outer
-    return true
-  }
-  return false
-}
 
 /**
  * PNGs and upright JPEGs are embedded byte-for-byte (lossless, fast).
@@ -161,7 +151,7 @@ async function normalizeImage(f: File) {
   return { bytes: new Uint8Array(await blob.arrayBuffer()), mime: mime as 'image/png' | 'image/jpeg', width: canvas.width, height: canvas.height }
 }
 
-function jpegOrientation(buf: ArrayBuffer): number {
+export function jpegOrientation(buf: ArrayBuffer): number {
   try {
     const v = new DataView(buf)
     if (v.getUint16(0) !== 0xffd8) return 1

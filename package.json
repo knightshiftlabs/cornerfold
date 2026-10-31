@@ -7,7 +7,10 @@
     "changelog": "node scripts/changelog.mjs",
     "dev": "node scripts/changelog.mjs && vite",
     "build": "node scripts/changelog.mjs && node scripts/licenses.mjs && tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "preversion": "npm test"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -22,14 +25,17 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "^0.1.65",
     "@tailwindcss/vite": "^4.0.9",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^26.1.0",
     "tailwindcss": "^4.0.9",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
-    "vite-plugin-pwa": "^0.21.1"
+    "vite-plugin-pwa": "^0.21.1",
+    "vitest": "^3.2.4"
   },
   "allowScripts": {
     "esbuild@0.25.12": true

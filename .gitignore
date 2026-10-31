@@ -1,3 +1,7 @@
 node_modules
 dist
 .DS_Store
+
+# Generated on every build from CHANGELOG.md and the installed packages
+public/changes.html
+public/licenses.txt

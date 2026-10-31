@@ -8,6 +8,11 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-10-31
+
+### Fixed
+- The custom size box no longer reads “5 5” as 55 KB; it asks for a proper size instead. Found by the new automated tests.
+
 ## [1.1.3] - 2026-10-31
 
 ### Added
