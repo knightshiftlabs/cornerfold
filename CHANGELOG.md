@@ -8,6 +8,16 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-31
+
+### Changed
+- Cornerfold has its own address: cornerfold.org.
+- Contact address is now hello@cornerfold.org.
+- Privacy policy: explains that email to cornerfold.org is forwarded by Cloudflare.
+
+### Security
+- Added a security.txt file, so anyone who finds a vulnerability knows how to report it: security@cornerfold.org.
+
 ## [1.1.0] - 2026-10-31
 
 ### Added

@@ -51,7 +51,7 @@ export function EmptyState() {
         <a href="/licenses.txt" className="hover:text-fg">
           Open-source licenses
         </a>
-        <a href="mailto:sinhautkarsh.1@gmail.com" className="hover:text-fg">
+        <a href="mailto:hello@cornerfold.org" className="hover:text-fg">
           Contact
         </a>
       </footer>

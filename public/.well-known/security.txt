@@ -1,0 +1,6 @@
+# Security contact for Cornerfold (RFC 9116).
+# Found a vulnerability? Please email us. We read every report and will credit you if you'd like.
+Contact: mailto:security@cornerfold.org
+Expires: 2027-10-31T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://cornerfold.org/.well-known/security.txt
