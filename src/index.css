@@ -113,12 +113,22 @@ kbd {
 }
 
 /* ---- Empty-state paper stack ---- */
-.stack { position: relative; width: min(100%, 400px); aspect-ratio: 0.9; justify-self: center; cursor: pointer; border-radius: 24px; }
+/* Phones: a compact, wide stack above the headline. Tablets and up: beside the text. */
+.stack { position: relative; display: block; width: min(62vw, 250px); aspect-ratio: 1.5; justify-self: center; cursor: pointer; border-radius: 24px; -webkit-tap-highlight-color: transparent; }
+/* Short phone screens (small Androids with browser toolbars): keep the main button above the fold. */
+@media (max-width: 639px) and (max-height: 700px) {
+  .stack { width: min(52vw, 200px); aspect-ratio: 1.7; }
+  .headline { font-size: 2.3rem; }
+}
+/* Tablets in portrait: same order as phones, with a bigger stack. */
+@media (min-width: 640px) { .stack { width: min(62vw, 400px); aspect-ratio: 1.4; } }
+/* Wide screens: beside the text. */
+@media (min-width: 1024px) { .stack { width: min(100%, 400px); aspect-ratio: 0.9; } }
 .stack:focus-visible { outline: 2px solid var(--ink); outline-offset: 6px; }
 .stack-slot { position: absolute; inset: 0; }
 .stack-sheet {
   position: absolute; left: 50%; top: 50%;
-  width: 62%; aspect-ratio: 1 / 1.414;
+  width: 40%; aspect-ratio: 1 / 1.414;
   display: flex; flex-direction: column; gap: 5.5%;
   padding: 11% 10%;
   background: var(--paper);
@@ -127,12 +137,19 @@ kbd {
   transform: translate(-50%, -50%) rotate(var(--r)) translate(var(--x), var(--y));
   transition: transform 460ms cubic-bezier(0.34, 1.4, 0.5, 1), box-shadow 300ms ease;
 }
+@media (min-width: 640px) { .stack-sheet { width: 42%; } }
+@media (min-width: 1024px) { .stack-sheet { width: 62%; } }
 .stack-sheet.is-back   { --r: -9deg; --x: -9%; --y: 3%; }
 .stack-sheet.is-middle { --r: 5deg;  --x: 7%;  --y: -2%; }
 .stack-sheet.is-front  { --r: -1.5deg; --x: 0%; --y: 1%; }
-.stack:hover .is-back,   .stack:focus-visible .is-back   { --r: -15deg; --x: -20%; --y: 5%; }
-.stack:hover .is-middle, .stack:focus-visible .is-middle { --r: 10deg;  --x: 18%;  --y: -3%; }
-.stack:hover .is-front,  .stack:focus-visible .is-front  { --r: -2.5deg; --y: -3%; box-shadow: var(--lifted-shadow); }
+.stack:hover .is-back,   .stack:focus-visible .is-back,   .stack:active .is-back   { --r: -15deg; --x: -20%; --y: 5%; }
+.stack:hover .is-middle, .stack:focus-visible .is-middle, .stack:active .is-middle { --r: 10deg;  --x: 18%;  --y: -3%; }
+.stack:hover .is-front,  .stack:focus-visible .is-front,  .stack:active .is-front  { --r: -2.5deg; --y: -3%; box-shadow: var(--lifted-shadow); }
+/* Touch screens can't hover, so the sheets rest a little further apart and fan out fully on press. */
+@media (hover: none) {
+  .stack-sheet.is-back   { --r: -12deg; --x: -16%; }
+  .stack-sheet.is-middle { --r: 8deg;   --x: 14%; }
+}
 
 /* The folded corner from the logo. The cut shows the desk behind it. */
 .stack-sheet.is-front::after {

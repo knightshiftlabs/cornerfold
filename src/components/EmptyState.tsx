@@ -6,14 +6,14 @@ import { Button } from './ui'
 export function EmptyState() {
   return (
     <section className="flex min-h-[calc(100dvh-4rem)] flex-col px-6 sm:px-12">
-      <div className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-16 py-16 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+      <div className="mx-auto grid w-full max-w-6xl flex-1 content-center items-center gap-5 py-5 [@media(max-height:700px)]:gap-3 [@media(max-height:700px)]:py-3 sm:gap-8 sm:py-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16 lg:py-16">
         <div>
           <h1 className="headline max-w-[13ch]">PDF tools that never see your files.</h1>
-          <p className="mt-7 max-w-[46ch] text-lg leading-relaxed text-muted sm:text-xl">
+          <p className="mt-4 max-w-[46ch] text-base leading-relaxed text-muted sm:mt-7 sm:text-xl">
             Merge, split, compress, reorder and rotate pages. Everything runs right here on your device, so your documents are never
             uploaded, stored or seen by anyone else.
           </p>
-          <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2.5 text-[0.95rem] font-medium" aria-label="Privacy">
+          <ul className="mt-5 grid max-w-md grid-cols-[auto_auto] justify-start gap-x-6 gap-y-2 text-[0.9rem] font-medium max-[380px]:gap-x-4 max-[380px]:text-[0.84rem] sm:mt-7 sm:gap-y-2.5 sm:text-[0.95rem]" aria-label="Privacy">
             {[
               [CloudOff, 'Nothing uploaded'],
               [WifiOff, 'Works offline'],
@@ -29,12 +29,12 @@ export function EmptyState() {
               )
             })}
           </ul>
-          <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 sm:mt-10">
             <Button variant="primary" size="lg" onClick={pickFiles}>
               <Plus />
               Choose files
             </Button>
-            <span className="text-muted">
+            <span className="text-muted [@media(pointer:coarse)]:hidden">
               or drop them anywhere, press <kbd>{MOD}</kbd> <kbd>O</kbd>, or paste a screenshot
             </span>
           </div>
@@ -70,7 +70,7 @@ function PaperStack() {
     { cls: 'is-front', delay: 140 },
   ]
   return (
-    <button type="button" onClick={pickFiles} aria-label="Choose files" className="stack hidden lg:block">
+    <button type="button" onClick={pickFiles} aria-label="Choose files" className="stack order-first lg:order-none">
       {sheets.map(({ cls, delay }) => (
         <span key={cls} className="stack-slot sheet-enter" style={{ '--d': `${200 + delay}ms`, '--tilt': '0deg' } as CSSProperties}>
           <span className={`stack-sheet ${cls}`}>
