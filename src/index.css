@@ -109,3 +109,39 @@ kbd {
   .sheet, .card { transition: none; }
   .card.is-lifted { transform: none; }
 }
+
+/* ---- Empty-state paper stack ---- */
+.stack { position: relative; width: min(100%, 400px); aspect-ratio: 0.9; justify-self: center; cursor: pointer; border-radius: 24px; }
+.stack:focus-visible { outline: 2px solid var(--ink); outline-offset: 6px; }
+.stack-slot { position: absolute; inset: 0; }
+.stack-sheet {
+  position: absolute; left: 50%; top: 50%;
+  width: 62%; aspect-ratio: 1 / 1.414;
+  display: flex; flex-direction: column; gap: 5.5%;
+  padding: 11% 10%;
+  background: var(--paper);
+  border-radius: 3px;
+  box-shadow: var(--paper-shadow);
+  transform: translate(-50%, -50%) rotate(var(--r)) translate(var(--x), var(--y));
+  transition: transform 460ms cubic-bezier(0.34, 1.4, 0.5, 1), box-shadow 300ms ease;
+}
+.stack-sheet.is-back   { --r: -9deg; --x: -9%; --y: 3%; }
+.stack-sheet.is-middle { --r: 5deg;  --x: 7%;  --y: -2%; }
+.stack-sheet.is-front  { --r: -1.5deg; --x: 0%; --y: 1%; }
+.stack:hover .is-back,   .stack:focus-visible .is-back   { --r: -15deg; --x: -20%; --y: 5%; }
+.stack:hover .is-middle, .stack:focus-visible .is-middle { --r: 10deg;  --x: 18%;  --y: -3%; }
+.stack:hover .is-front,  .stack:focus-visible .is-front  { --r: -2.5deg; --y: -3%; box-shadow: var(--lifted-shadow); }
+
+/* The folded corner from the logo. The cut shows the desk behind it. */
+.stack-sheet.is-front::after {
+  content: ""; position: absolute; top: 0; right: 0; width: 17%; aspect-ratio: 1;
+  background: linear-gradient(225deg, var(--desk) 50%, var(--hi) 50%);
+  border-bottom-left-radius: 2px;
+}
+.stack-sheet .ln { display: block; height: 3%; width: 100%; border-radius: 99px; background: #e4e8ef; }
+.stack-sheet .ln.t { height: 5.5%; width: 58%; background: #cdd4df; margin-bottom: 3%; }
+.stack-sheet .pic { display: block; aspect-ratio: 16 / 9; width: 100%; border-radius: 2px; background: linear-gradient(135deg, #dfe3fb, #c9cff7); }
+
+@media (prefers-reduced-motion: reduce) {
+  .stack-sheet { transition: none; }
+}
