@@ -8,6 +8,11 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.7] - 2026-11-01
+
+### Removed
+- The site no longer sends the `X-Robots-Tag: noai, noimageai` header. Nothing about how Cornerfold handles your files has changed.
+
 ## [1.1.6] - 2026-11-01
 
 ### Changed

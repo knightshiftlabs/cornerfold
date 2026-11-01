@@ -1,6 +1,8 @@
-# Cloudflare Pages response headers. This CSP is the technical guarantee behind
-# "your files never leave your device": the browser itself refuses any request
-# to another origin, and nothing in v1 sends file data even to our own origin.
+# Cloudflare Pages response headers.
+# "Your files never leave your device" rests first on Cornerfold's own code, which never
+# sends file data anywhere, not even to our own origin. This CSP is the second safeguard:
+# it tells the browser to block the usual ways a page reaches other sites (loading scripts,
+# images, styles or fonts from them, or sending them data requests).
 /*
   Content-Security-Policy: default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
   Referrer-Policy: no-referrer
