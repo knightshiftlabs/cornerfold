@@ -1,6 +1,17 @@
-node_modules
-dist
+# Dependencies and build output
+node_modules/
+dist/
+
+# Environment variables and secrets (Cornerfold uses none today; this keeps it that way)
+.env
+.env.*
+!.env.example
+.dev.vars
+.wrangler/
+
+# Operating system files
 .DS_Store
+Thumbs.db
 
 # Generated on every build from CHANGELOG.md and the installed packages
 public/changes.html

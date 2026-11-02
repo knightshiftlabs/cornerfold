@@ -8,6 +8,17 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.8] - 2026-11-02
+
+### Added
+- Cornerfold’s source code is now public on GitHub, so anyone can check exactly what it does with files.
+
+### Changed
+- Privacy policy: the “Check it yourself” section now points to the source code. The policy’s “Last updated” date also now reflects the wording change made in 1.1.6.
+
+### Security
+- A published security policy explains how to report a vulnerability privately, through GitHub or security@cornerfold.org, and security.txt now links to it.
+
 ## [1.1.7] - 2026-11-01
 
 ### Removed

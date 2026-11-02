@@ -1,0 +1,8 @@
+# Keeps the pinned GitHub Actions in .github/workflows/ up to date: a weekly pull request when
+# a new version is out. npm security updates are handled separately, in the repository settings.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

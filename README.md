@@ -17,7 +17,7 @@ npm run preview    # serve the production build locally
 
 ## Deploy (Cloudflare Pages)
 
-Connect the repo, set build command `npm run build` and output directory `dist`. `public/_headers` ships the security headers, including the CSP. After deploying, open DevTools, go to Network, add files and export: you should see zero requests carrying file data. Leave Cloudflare Web Analytics switched off, and fill in the placeholders in `public/privacy.html`.
+Connect the repo, set build command `npm test && npm run build` (so failing code is never deployed) and output directory `dist`. `public/_headers` ships the security headers, including the CSP. After deploying, open DevTools, go to Network, add files and export: you should see zero requests carrying file data. Leave Cloudflare Web Analytics switched off.
 
 Firebase Hosting works too; move the headers from `_headers` into `firebase.json`.
 
@@ -35,7 +35,7 @@ The whole v1 is one idea: every tool is "arrange a list of pages, then write it 
 
 ## Privacy guarantees, and what enforces each one
 
-Files never leave the device: there is no upload code, and the CSP `connect-src 'self'` with no backend means the browser blocks exfiltration even if a dependency misbehaved. No third parties: fonts and the pdf.js worker are bundled and self-hosted, and the CSP allows only `'self'`. No cookies or analytics, so no consent banner is needed. It works offline: the service worker precaches the app after the first visit. Metadata is stripped: `updateMetadata: false` on output documents.
+Files never leave the device: the app contains no code that uploads documents or sends their contents anywhere. As a second safeguard, the CSP restricts connections to the site's own origin and blocks the common ways a page talks to third-party servers; it narrows what misbehaving code could do, but it isn't a guarantee against every possible technique. No third parties: fonts and the pdf.js worker are bundled and self-hosted, and the CSP allows only `'self'`. No cookies or analytics, so no consent banner is needed. It works offline: the service worker precaches the app after the first visit. Metadata is stripped: `updateMetadata: false` on output documents.
 
 The remaining personal data is the host's IP logs. Disclose them in the privacy policy and keep the host's DPA on file.
 
@@ -45,7 +45,7 @@ The remaining personal data is the host's IP logs. Disclose them in the privacy 
 detection, size parsing, editing and undo, and the interface in a simulated browser. See
 `tests/README.md` for what each file covers and the rules for adding tests.
 
-**On GitHub:** every push runs the tests and the build on a clean Linux machine (`.github/workflows/ci.yml`). A red cross next to a commit means something broke; Cloudflare will still deploy it, so fix it straight away.
+**On GitHub:** every push runs the tests and the build on a clean Linux machine (`.github/workflows/ci.yml`). A red cross next to a commit means something broke. Cloudflare also runs the tests before every build (`npm test && npm run build`), so a commit with failing tests is not deployed. Security reports: see `SECURITY.md`.
 
 **Release criteria:** no release unless `npm test` passes and the production build succeeds. This is
 enforced: `npm version patch`, `minor` or `major` runs both first and stops, with no version bump and
