@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.1.9] - 2026-11-02
+## [1.1.9] - 2026-11-05
 
 ### Security
 - Compressing a PDF that claims to contain an enormous image no longer risks using up your device’s memory. Such images are now skipped, and no file can make Cornerfold unpack more data than its image declares.
