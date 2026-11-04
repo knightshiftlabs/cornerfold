@@ -8,6 +8,14 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.9] - 2026-11-02
+
+### Security
+- Compressing a PDF that claims to contain an enormous image no longer risks using up your device’s memory. Such images are now skipped, and no file can make Cornerfold unpack more data than its image declares.
+
+### Changed
+- Release history: the 1.0.0 notes now describe the security policy the same way the privacy policy does.
+
 ## [1.1.8] - 2026-11-02
 
 ### Added
@@ -123,5 +131,5 @@ First public release.
 - Privacy policy and this release history.
 
 ### Security
-- All processing happens on your device. Files are never uploaded, and the site's security policy blocks requests to any other server.
+- All processing happens on your device. Files are never uploaded, and the site's security policy blocks the usual ways a page reaches other websites.
 - Exported PDFs carry no author, creator or producer metadata.

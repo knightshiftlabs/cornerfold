@@ -37,6 +37,13 @@ interface Candidate {
   predictor: number
 }
 
+/**
+ * Images claiming more pixels than this are left alone. A tiny PDF can declare an enormous image
+ * whose data unpacks to gigabytes (a "decompression bomb"); 40 megapixels still covers an
+ * 8,000 × 5,000 scan, far beyond any normal document.
+ */
+export const MAX_IMAGE_PIXELS = 40_000_000
+
 const N = (s: string) => PDFName.of(s)
 const keyOf = (ref: PDFRef) => `${ref.objectNumber} ${ref.generationNumber}`
 const num = (o: PDFObject | undefined) => (o instanceof PDFNumber ? o.asNumber() : undefined)
@@ -110,8 +117,10 @@ export class Compressor<B extends { width: number; height: number }> {
           // A JPEG carrying EXIF rotation decodes turned; PDF viewers ignore EXIF, so leave it alone.
           return bmp.width === c.width && bmp.height === c.height ? bmp : null
         }
-        let samples = unzlibSync(stream.contents)
         const rowBytes = c.width * c.components
+        // Never unpack more than the image claims to need, whatever the data says.
+        const expected = (c.predictor >= 10 ? rowBytes + 1 : rowBytes) * c.height
+        let samples = inflateAtMost(stream.contents, expected)
         if (c.predictor >= 10) samples = unPng(samples, rowBytes, c.components, c.height)
         if (samples.length < rowBytes * c.height) return null
         const rgba = new Uint8ClampedArray(c.width * c.height * 4)
@@ -166,7 +175,7 @@ function findCandidates(doc: PDFDocument): Candidate[] {
     if (num(d.get(N('BitsPerComponent'))) !== 8) continue
     const width = num(d.get(N('Width')))
     const height = num(d.get(N('Height')))
-    if (!width || !height || width * height < 128 * 128 || stream.contents.length < 16_000) continue
+    if (!width || !height || width * height < 128 * 128 || width * height > MAX_IMAGE_PIXELS || stream.contents.length < 16_000) continue
 
     // A soft mask with /Matte must keep the exact same dimensions as its image.
     const smask = doc.context.lookup(d.get(N('SMask')))
@@ -250,6 +259,11 @@ function stripMetadata(doc: PDFDocument) {
   doc.catalog.delete(N('Metadata'))
   const info = (doc as unknown as { getInfoDict(): PDFDict }).getInfoDict()
   for (const k of ['Author', 'Creator', 'Producer', 'Subject', 'Keywords', 'CreationDate', 'ModDate']) info.delete(N(k))
+}
+
+/** Unpack zlib data, but never beyond `limit` bytes, whatever the data says (a decompression bomb defence). */
+export function inflateAtMost(data: Uint8Array, limit: number) {
+  return unzlibSync(data, { out: new Uint8Array(limit) })
 }
 
 /** Reverse PNG row filters (PDF predictors 10–15). */

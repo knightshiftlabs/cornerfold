@@ -19,6 +19,7 @@ export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify('test') },
   test: {
     include: ['tests/**/*.test.{ts,tsx}'],
+    exclude: ['tests/fuzz/**', 'tests/e2e/**', 'node_modules/**'],
     environment: 'node',
     testTimeout: 60_000,
     hookTimeout: 60_000,

@@ -41,7 +41,7 @@ The remaining personal data is the host's IP logs. Disclose them in the privacy 
 
 ## Testing
 
-`npm test` runs the full automated suite (about 20 seconds): the export engine, compression, file
+`npm test` runs the full automated suite (about 20 seconds); `npm run test:fuzz` fuzzes the PDF engines with thousands of corrupted files: the export engine, compression, file
 detection, size parsing, editing and undo, and the interface in a simulated browser. See
 `tests/README.md` for what each file covers and the rules for adding tests.
 

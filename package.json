@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:fuzz": "vitest run --config vitest.fuzz.config.ts",
     "preversion": "npm test && npm run build"
   },
   "dependencies": {
@@ -30,12 +31,13 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
+    "jpeg-js": "^0.4.4",
     "jsdom": "^26.1.0",
     "tailwindcss": "^4.0.9",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
     "vite-plugin-pwa": "^0.21.1",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.12"
   },
   "allowScripts": {
     "esbuild@0.25.12": true
