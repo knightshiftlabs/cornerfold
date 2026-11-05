@@ -1,7 +1,7 @@
 {
   "name": "cornerfold",
   "private": true,
-  "version": "1.1.9",
+  "version": "1.1.10",
   "type": "module",
   "scripts": {
     "changelog": "node scripts/changelog.mjs",
