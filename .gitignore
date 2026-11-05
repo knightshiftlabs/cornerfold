@@ -19,3 +19,5 @@ public/licenses.txt
 
 # Inputs saved by the fuzzer when it finds a problem
 tests/fuzz/failures/
+
+*.patch
