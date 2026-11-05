@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.1.10] - 2026-11-05
+## [1.1.10] - 2026-11-06
 
 ### Added
 - A “Report a problem” link, on the home screen and in the privacy badge. It opens a draft email to hello@cornerfold.org with Cornerfold’s version and your browser’s name filled in. You can edit or delete anything, and nothing is sent unless you press send.
