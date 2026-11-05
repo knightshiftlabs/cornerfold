@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ShieldCheck, WifiOff } from 'lucide-react'
+import { reportHref } from '../lib/report'
 
 function useOnline() {
   const [online, setOnline] = useState(navigator.onLine)
@@ -59,9 +60,14 @@ export function PrivacyBadge() {
             Cornerfold works entirely inside this browser tab. Your files are never uploaded, and closing the tab clears them from memory.
             {!online && ' Right now you’re offline, and everything still works.'}
           </p>
-          <a href="/privacy.html#check" className="mt-3 inline-block font-semibold text-ink hover:underline">
-            Check it yourself
-          </a>
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+            <a href="/privacy.html#check" className="font-semibold text-ink hover:underline">
+              Check it yourself
+            </a>
+            <a href={reportHref(__APP_VERSION__, navigator.userAgent)} className="font-semibold text-ink hover:underline">
+              Report a problem
+            </a>
+          </div>
         </div>
       )}
     </div>

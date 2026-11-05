@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { PDFDocument, PDFName } from 'pdf-lib'
+import { PDFDocument, PDFName, PDFRawStream } from 'pdf-lib'
+import { zlibSync } from 'fflate'
 import { Compressor, PRESETS } from '../src/lib/compress'
 import { nodeCodec } from './helpers/canvas'
 import { bookmarkedPdf, fixture, scanPdf, textPdf } from './helpers/fixtures'
@@ -76,5 +77,56 @@ describe('files compression should not touch', () => {
     expect(out.catalog.has(PDFName.of('Outlines'))).toBe(true)
     expect(out.getTitle()).toBe('Bookmarked book')
     expect(out.getAuthor()).toBeUndefined()
+  })
+})
+
+describe('size targets on files that already fit (regression)', () => {
+  it('returns the original file untouched when it is already under the limit', async () => {
+    const src = await scanPdf(3)
+    const c = new Compressor(src, nodeCodec)
+    await c.init()
+    const r = await c.fitUnder(src.length * 2) // a limit far above the file's size
+    expect(r.met).toBe(true)
+    expect(r.bytes.length).toBe(src.length)
+    expect(Buffer.compare(Buffer.from(r.bytes), Buffer.from(src))).toBe(0) // byte for byte, no image re-encoded
+  })
+
+  it('still compresses when the file really is over the limit', async () => {
+    const src = await scanPdf(3)
+    const c = new Compressor(src, nodeCodec)
+    await c.init()
+    const r = await c.fitUnder(Math.floor(src.length / 4))
+    expect(r.bytes.length).toBeLessThan(src.length)
+  })
+})
+
+/** A PDF whose single image is Flate-encoded with the given predictor in its decode parameters. */
+async function imageWithPredictor(predictor: number) {
+  const w = 300
+  const h = 300
+  let seed = 7
+  const raw = new Uint8Array((w * 3 + 1) * h)
+  for (let i = 0; i < raw.length; i++) raw[i] = ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) >> 16) & 0xff // noise, so the stream is large
+  const d = await PDFDocument.create()
+  d.addPage()
+  const dict = d.context.obj({
+    Type: 'XObject', Subtype: 'Image', Width: w, Height: h, ColorSpace: 'DeviceRGB', BitsPerComponent: 8, Filter: 'FlateDecode',
+    DecodeParms: { Predictor: predictor, Colors: 3, BitsPerComponent: 8, Columns: w },
+  })
+  d.context.register(PDFRawStream.of(dict, zlibSync(raw)))
+  return d.save()
+}
+
+describe('image encodings that are not fully understood (regression)', () => {
+  it.each([2, 3, 5, 9, 16, 99])('leaves an image with predictor %i alone', async (predictor) => {
+    const c = new Compressor(await imageWithPredictor(predictor), nodeCodec)
+    await c.init()
+    expect(c.imageCount).toBe(0)
+  })
+
+  it.each([1, 10, 12, 15])('still considers an image with the supported predictor %i', async (predictor) => {
+    const c = new Compressor(await imageWithPredictor(predictor), nodeCodec)
+    await c.init()
+    expect(c.imageCount).toBe(1)
   })
 })

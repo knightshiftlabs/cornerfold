@@ -87,6 +87,8 @@ export class Compressor<B extends { width: number; height: number }> {
 
   /** Smallest acceptable loss of quality that fits under `target` bytes. */
   async fitUnder(target: number): Promise<{ bytes: Uint8Array; met: boolean }> {
+    // A file that already fits is returned exactly as it is: no image gets re-encoded for nothing.
+    if (this.source.length <= target) return { bytes: this.source, met: true }
     this.baseline ??= await this.run({ dpi: 10_000, quality: 0.92 }) // lossless-ish pass
     if (this.baseline.length <= target) return { bytes: this.baseline, met: true }
     const strongest = await this.run(paramsAt(1))
@@ -196,7 +198,10 @@ function findCandidates(doc: PDFDocument): Candidate[] {
         predictor = num(parms.get(N('Predictor'))) ?? 1
         const bpc = num(parms.get(N('BitsPerComponent'))) ?? 8
         const colors = num(parms.get(N('Colors'))) ?? 1
-        if (predictor === 2 || (predictor >= 10 && (bpc !== 8 || colors !== components))) continue
+        // Only "no prediction" (1) and the PNG predictors (10 to 15) are understood. Anything else
+        // (TIFF predictor 2, or an invalid value) is left alone rather than decoded on a guess.
+        const supported = predictor === 1 || (predictor >= 10 && predictor <= 15 && bpc === 8 && colors === components)
+        if (!supported) continue
       }
     }
 

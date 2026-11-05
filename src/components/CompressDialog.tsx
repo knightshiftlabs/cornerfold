@@ -124,7 +124,7 @@ function Panel() {
               hint={
                 typeof results.target === 'object' && !results.target.met
                   ? 'Can’t get this file that small. This is as small as it goes.'
-                  : 'The best quality that fits the limit.'
+                  : 'High quality that fits the limit.'
               }
               result={results.target}
               original={original}

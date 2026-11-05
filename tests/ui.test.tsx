@@ -56,6 +56,14 @@ describe('home screen', () => {
     expect(text()).toContain('Nothing uploaded')
     expect(text()).toContain('Cornerfold test')
   })
+
+  it('offers a Report a problem link that fills in the version (and sends nothing itself)', () => {
+    const link = $$('a').find((a) => a.textContent === 'Report a problem') as HTMLAnchorElement
+    expect(link).toBeTruthy()
+    const href = link.getAttribute('href')!
+    expect(href.startsWith('mailto:hello@cornerfold.org?subject=')).toBe(true)
+    expect(decodeURIComponent(href)).toContain('Cornerfold test')
+  })
 })
 
 describe('working with pages', () => {
@@ -154,6 +162,8 @@ describe('compress panel', () => {
     await submit('1,000 KB')
     expect($('#size-error')).toBeNull()
     expect(text()).toContain('Under 1000 KB')
+    expect(text()).toContain('High quality that fits the limit') // regression: it used to promise "the best quality"
+    expect(text()).not.toContain('best quality')
     await press('Escape')
   })
 })

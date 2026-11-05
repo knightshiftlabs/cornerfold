@@ -8,6 +8,20 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.10] - 2026-11-05
+
+### Added
+- A “Report a problem” link, on the home screen and in the privacy badge. It opens a draft email to hello@cornerfold.org with Cornerfold’s version and your browser’s name filled in. You can edit or delete anything, and nothing is sent unless you press send.
+
+### Changed
+- Compressing with a size limit now leaves a PDF exactly as it is when it already fits under the limit, instead of re-encoding its images for no reason.
+- The size-limit option now says “High quality that fits the limit”, because the search is a close approximation rather than a guaranteed best.
+- Privacy policy: explains what the “Report a problem” draft contains.
+- Release history: the 1.1.0 notes now describe the security policy precisely: inline scripts and inline style blocks are blocked.
+
+### Fixed
+- Compression now leaves alone any image saved in an unusual internal encoding it doesn’t fully understand, instead of processing it on a guess.
+
 ## [1.1.9] - 2026-11-05
 
 ### Security
@@ -104,7 +118,7 @@ This file is the source for the public page at /changes.html, which is generated
 - The first export after adding files starts instantly; the PDF engine now warms up in the background.
 
 ### Security
-- Stricter security policy: the app can’t load anything from other websites, and can’t use inline styles or embedded data URLs.
+- Stricter security policy: the app can’t load anything from other websites, and can’t run inline scripts or inline style blocks, and can’t use embedded data URLs.
 - Privacy policy: explains what happens if you email us, and how to check for yourself that files never leave your device.
 
 ## [1.0.1] - 2026-10-31

@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { CloudOff, EyeOff, Plus, UserX, WifiOff } from 'lucide-react'
 import { MOD, pickFiles } from '../lib/actions'
+import { reportHref } from '../lib/report'
 import { Button } from './ui'
 
 export function EmptyState() {
@@ -56,6 +57,9 @@ export function EmptyState() {
         </a>
         <a href="mailto:hello@cornerfold.org" className="hover:text-fg">
           Contact
+        </a>
+        <a href={reportHref(__APP_VERSION__, navigator.userAgent)} className="hover:text-fg">
+          Report a problem
         </a>
       </footer>
     </section>

@@ -63,4 +63,8 @@ for (const [key, { pkg, dir }] of [...found].sort(([a], [b]) => a.localeCompare(
 }
 writeFileSync(join(root, 'public', 'licenses.txt'), parts.filter((x) => x !== '').join('\n').replace(/\n(={72})\n/g, '\n\n$1\n') + '\n')
 console.log(`licenses.txt generated (${found.size} packages)`)
-if (unknown.length) console.warn(`Warning: no license found for ${unknown.join(', ')}`)
+if (unknown.length) {
+  // License notices travel with the code. A package with no license information can't be shipped.
+  console.error(`Error: no license information found for ${unknown.join(', ')}. Resolve it, or remove the dependency.`)
+  process.exit(1)
+}
