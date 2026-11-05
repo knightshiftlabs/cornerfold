@@ -39,7 +39,7 @@ that installs with the other packages.
 
 ## Fuzzing
 
-`npm run test:fuzz` feeds thousands of randomly corrupted PDFs (flipped bytes, inserted tokens,
+`npm run test:fuzz` feeds randomly corrupted PDFs, 400 per run by default (flipped bytes, inserted tokens,
 deleted or duplicated chunks, truncation, extreme numbers) through the same engines the app uses:
 the one that reads files and draws thumbnails, and the one that exports and compresses. Rejecting a
 broken file is fine. A hang, a crash, or a broken PDF produced from an accepted file is not, and the
