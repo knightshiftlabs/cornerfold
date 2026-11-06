@@ -8,6 +8,14 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.1.11] - TBD
+
+### Security
+- Photos you turn into PDFs no longer carry their hidden details into the PDF: the camera or phone model, the date and time, and the GPS location where the picture was taken. For JPEGs the details are removed without re-encoding, so the picture’s quality is unchanged. PDFs you made with earlier versions from such photos may still contain that information.
+
+### Changed
+- Privacy policy: says exactly what happens to a photo’s hidden details.
+
 ## [1.1.10] - 2026-11-06
 
 ### Added

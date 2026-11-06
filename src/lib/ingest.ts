@@ -3,6 +3,7 @@ import { EngineError, openPdf, releaseSource } from './pdf'
 import { contains } from './bytes'
 import { stage } from './motion'
 import { getWorker } from './engine'
+import { stripJpegMetadata } from './jpeg'
 
 const uid = () => crypto.randomUUID()
 const isPdf = (f: File) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name)
@@ -125,19 +126,22 @@ function describe(f: File, e: unknown) {
 
 
 /**
- * PNGs and upright JPEGs are embedded byte-for-byte (lossless, fast).
- * Rotated phone photos (EXIF orientation) and other formats are redrawn upright first.
+ * PNGs go in as they are (the PDF writer keeps only their pixels). An upright JPEG goes in without being
+ * re-encoded, but first loses the hidden details a photo carries: camera, date, GPS location, previews and
+ * comments. Rotated phone photos (EXIF orientation), JPEGs that can't be cleaned that way, and other formats
+ * are redrawn upright, which drops those details too.
  */
 async function normalizeImage(f: File) {
   const buf = await f.arrayBuffer()
   const jpeg = f.type === 'image/jpeg'
   const png = f.type === 'image/png'
+  const cleaned = jpeg ? stripJpegMetadata(new Uint8Array(buf)) : null
 
-  if (png || (jpeg && jpegOrientation(buf) <= 1)) {
+  if (png || (cleaned && jpegOrientation(buf) <= 1)) {
     const bmp = await createImageBitmap(new Blob([buf], { type: f.type }))
     const { width, height } = bmp
     bmp.close()
-    return { bytes: new Uint8Array(buf), mime: f.type as 'image/png' | 'image/jpeg', width, height }
+    return { bytes: cleaned ?? new Uint8Array(buf), mime: f.type as 'image/png' | 'image/jpeg', width, height }
   }
 
   const bmp = await createImageBitmap(new Blob([buf], { type: f.type }), { imageOrientation: 'from-image' })

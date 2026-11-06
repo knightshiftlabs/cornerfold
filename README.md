@@ -27,7 +27,7 @@ The whole v1 is one idea: every tool is "arrange a list of pages, then write it 
 
 `src/lib/store.ts` holds the page list. Every edit goes through `commit()`, so everything is undoable (100 steps).
 
-`src/lib/ingest.ts` reads dropped, picked or pasted files. PNGs and upright JPEGs are embedded byte-for-byte (lossless); rotated phone photos are redrawn upright using their EXIF orientation. Password-protected PDFs are detected up front.
+`src/lib/ingest.ts` reads dropped, picked or pasted files. An upright JPEG is embedded without being re-encoded, after `src/lib/jpeg.ts` strips the hidden details a photo carries (camera, date, GPS location, previews, comments); PNGs go in as they are, and the PDF writer keeps only their pixels. Rotated phone photos are redrawn upright using their EXIF orientation, which drops those details too. Password-protected PDFs are detected up front.
 
 `src/lib/pdf.ts` renders thumbnails with pdf.js only when a card scrolls near view, three at a time, cached per session. pdf.js is lazy-loaded and prefetched on idle, so first paint is about 72 KB of gzipped JS.
 
@@ -60,16 +60,16 @@ Cornerfold follows [Semantic Versioning](https://semver.org). For an app people 
 
 While working, add each user-facing change under `## [Unreleased]`, in plain language a user would understand. To release:
 
-1. **Check today's date first**, in India time (the maintainer's calendar day), from a trustworthy clock. In `CHANGELOG.md`, rename `## [Unreleased]` to the new version and that date, e.g. `## [1.1.0] - 2026-11-15`, and add a fresh empty `## [Unreleased]` above it. A wrong date in the public release history is easy to make and awkward to correct.
+1. In `CHANGELOG.md`, rename `## [Unreleased]` to the new version with **TBD** as its date, e.g. `## [1.1.0] - TBD`, and add a fresh empty `## [Unreleased]` above it. **Don't type a date.** The release command writes it (step 3), because a hand-typed date in the public release history is easy to get wrong.
 2. Commit that: `git add .` then `git commit -m "Changelog for 1.1.0"`.
-3. Bump the version, which runs the tests and the production build first, then commits and tags it: `npm version 1.1.0 -m "Release %s"`. If a test fails, nothing is released; fix it and run the command again.
+3. Bump the version: `npm version 1.1.0 -m "Release %s"`. This runs the tests and the production build first (if anything fails, nothing is released), bumps the version, then **stamps today's date in India time** (`scripts/stamp-date.mjs`) into the changelog entry, and into the "Last updated" line of the privacy policy and terms **only if that page's text changed since the last release**, and finally commits and tags. It stops if the clock is earlier than the previous release's date. To release under a different date, set it for that one command: in PowerShell, `$env:RELEASE_DATE="2026-11-15"; npm version 1.1.0 -m "Release %s"`.
 4. Publish with the tag: `git push --follow-tags`.
 
 `public/changes.html` and `public/licenses.txt` are generated on every build (and when the dev server starts), so they are not committed to Git. Every build regenerates `public/licenses.txt` (the open-source notices) from the installed packages, so adding a dependency updates it automatically.
 
 `public/.well-known/security.txt` has an `Expires` date (currently 31 October 2027). Renew it before then, or security researchers will treat it as stale.
 
-Any change to the privacy policy or terms gets its own changelog line, and the "Last updated" date on that page changes with it.
+Any change to the privacy policy or terms gets its own changelog line. The "Last updated" date on that page is set automatically at release, so don't edit it by hand.
 
 ## Shortcuts
 

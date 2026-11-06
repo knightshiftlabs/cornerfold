@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:fuzz": "vitest run --config vitest.fuzz.config.ts",
-    "preversion": "npm test && npm run build"
+    "preversion": "npm test && npm run build",
+    "version": "node scripts/stamp-date.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

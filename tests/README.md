@@ -12,6 +12,10 @@ Run everything: `npm test` (about 20 seconds). While working: `npm run test:watc
 | `worker.test.ts` | The export engine exactly as the app runs it: merge, split, compress, forms, memory |
 | `store.test.ts` | Editing, undo and redo, selection, freeing memory |
 | `bombs.test.ts` | Deliberately malicious files: images that claim to be enormous, data that unpacks far beyond what it declares, fake page counts, absurd nesting, loops in form fields |
+| `jpeg.test.ts` | Removing a photo's hidden details (camera, date, GPS, previews, comments, trailing data) without touching the picture: baseline, progressive and CMYK files |
+| `photoPrivacy.test.ts` | The same promise end to end: a photo or PNG added through the real import code and exported by the real engine carries none of it |
+| `report.test.ts` | The "Report a problem" email draft: only the version and the browser, safely encoded |
+| `stampDate.test.ts` | Release dates: India's date, the changelog entry, which policy pages get dated, and the safety stops, including a real run in a scratch repository |
 | `ui.test.tsx` | The interface in a simulated browser: clicks, shortcuts, the compress panel, the privacy badge |
 
 Test documents are generated on the fly in `helpers/fixtures.ts`. The few that need special
