@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.2.1] - TBD
+## [1.2.1] - 2026-11-07
 
 ### Fixed
 - Compressing a long scanned document no longer uses more memory with every page. In our tests, a 24-page scan took the browser from about 430 MB to over 1.4 GB, and it held on to it afterwards, which could crash the tab on a phone. Now it stays under 1 GB, and adding pages barely changes it. The compressed result is exactly the same as before.
