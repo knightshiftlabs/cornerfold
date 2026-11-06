@@ -9,6 +9,31 @@ export interface Codec<B extends { width: number; height: number }> {
   decodeJpeg(bytes: Uint8Array): Promise<B>
   fromRGBA(rgba: Uint8ClampedArray, width: number, height: number): Promise<B>
   encodeJpeg(src: B, width: number, height: number, quality: number): Promise<Uint8Array>
+  /** Frees a picture's memory straight away, instead of waiting for the browser's garbage collection. */
+  release?(bitmap: B): void
+}
+
+/**
+ * How much the compressor may keep between runs, so presets and size searches don't decode the same
+ * pictures over and over. Decoded pictures are the big cost: an A4 scan at 300 dpi is about 33 MB once
+ * decoded. Beyond the budget a picture is decoded again when needed and freed as soon as it has been used.
+ */
+export interface Budgets {
+  /** Decoded pixels kept (4 bytes each). */
+  decodedPixels: number
+  /** Bytes of already-compressed pictures kept. */
+  encodedBytes: number
+}
+export const DEFAULT_BUDGETS: Budgets = { decodedPixels: 48_000_000, encodedBytes: 96 * 1024 * 1024 }
+
+/**
+ * Smaller budgets for devices that report little memory (in gigabytes, as Chrome does). Where the browser
+ * says nothing, as Safari and Firefox don't, the default applies.
+ */
+export function budgetsFor(deviceMemoryGb?: number): Budgets {
+  if (!deviceMemoryGb || deviceMemoryGb > 4) return DEFAULT_BUDGETS
+  if (deviceMemoryGb > 2) return { decodedPixels: 24_000_000, encodedBytes: 48 * 1024 * 1024 }
+  return { decodedPixels: 12_000_000, encodedBytes: 24 * 1024 * 1024 }
 }
 
 export interface Params {
@@ -51,13 +76,18 @@ const num = (o: PDFObject | undefined) => (o instanceof PDFNumber ? o.asNumber()
 export class Compressor<B extends { width: number; height: number }> {
   private candidates: Candidate[] = []
   private maxPagePt = 842
-  private decoded = new Map<string, Promise<B | null>>()
-  private encoded = new Map<string, Promise<Uint8Array | null>>()
+  private decoded = new Map<string, { bitmap: B; pixels: number }>()
+  private heldPixels = 0
+  private undecodable = new Set<string>()
+  private encoded = new Map<string, Uint8Array | null>()
+  private heldBytes = 0
   private baseline: Uint8Array | null = null
+  private turn: Promise<unknown> = Promise.resolve()
 
   constructor(
     readonly source: Uint8Array,
     private codec: Codec<B>,
+    private budgets: Budgets = DEFAULT_BUDGETS,
   ) {}
 
   get imageCount() {
@@ -70,12 +100,32 @@ export class Compressor<B extends { width: number; height: number }> {
     this.candidates = findCandidates(doc)
   }
 
+  /** Frees everything kept in memory. Call when the compressor is no longer needed. */
+  dispose() {
+    for (const { bitmap } of this.decoded.values()) this.codec.release?.(bitmap)
+    this.decoded.clear()
+    this.encoded.clear()
+    this.heldPixels = this.heldBytes = 0
+    this.baseline = null
+  }
+
+  /** Jobs take turns. Two at once would double the memory in use, and could free a picture the other still needs. */
+  private inTurn<T>(job: () => Promise<T>): Promise<T> {
+    const result = this.turn.then(job, job)
+    this.turn = result.catch(() => undefined)
+    return result
+  }
+
   /** Compress with fixed settings. Never returns something bigger than the input. */
-  async run(params: Params): Promise<Uint8Array> {
+  run(params: Params): Promise<Uint8Array> {
+    return this.inTurn(() => this.runNow(params))
+  }
+
+  private async runNow(params: Params): Promise<Uint8Array> {
     const doc = await PDFDocument.load(this.source, { updateMetadata: false })
     const capPx = (this.maxPagePt / 72) * params.dpi
     for (const c of this.candidates) {
-      const jpeg = await this.encode(c, capPx, params.quality)
+      const jpeg = await this.encode(doc, c, capPx, params.quality)
       if (!jpeg || jpeg.length > c.originalBytes * 0.9) continue // not worth it
       const scale = Math.min(1, capPx / Math.max(c.width, c.height))
       replaceImage(doc, c, jpeg, Math.max(1, Math.round(c.width * scale)), Math.max(1, Math.round(c.height * scale)))
@@ -86,74 +136,106 @@ export class Compressor<B extends { width: number; height: number }> {
   }
 
   /** Smallest acceptable loss of quality that fits under `target` bytes. */
-  async fitUnder(target: number): Promise<{ bytes: Uint8Array; met: boolean }> {
-    // A file that already fits is returned exactly as it is: no image gets re-encoded for nothing.
-    if (this.source.length <= target) return { bytes: this.source, met: true }
-    this.baseline ??= await this.run({ dpi: 10_000, quality: 0.92 }) // lossless-ish pass
-    if (this.baseline.length <= target) return { bytes: this.baseline, met: true }
-    const strongest = await this.run(paramsAt(1))
-    if (strongest.length > target) return { bytes: strongest, met: false }
-    let lo = 0
-    let hi = 1
-    let best = strongest
-    for (let i = 0; i < 6; i++) {
-      const mid = (lo + hi) / 2
-      const out = await this.run(paramsAt(mid))
-      if (out.length <= target) {
-        best = out
-        hi = mid
-      } else lo = mid
-    }
-    return { bytes: best, met: true }
+  fitUnder(target: number): Promise<{ bytes: Uint8Array; met: boolean }> {
+    return this.inTurn(async () => {
+      // A file that already fits is returned exactly as it is: no image gets re-encoded for nothing.
+      if (this.source.length <= target) return { bytes: this.source, met: true }
+      this.baseline ??= await this.runNow({ dpi: 10_000, quality: 0.92 }) // lossless-ish pass
+      if (this.baseline.length <= target) return { bytes: this.baseline, met: true }
+      const strongest = await this.runNow(paramsAt(1))
+      if (strongest.length > target) return { bytes: strongest, met: false }
+      let lo = 0
+      let hi = 1
+      let best = strongest
+      for (let i = 0; i < 6; i++) {
+        const mid = (lo + hi) / 2
+        const out = await this.runNow(paramsAt(mid))
+        if (out.length <= target) {
+          best = out
+          hi = mid
+        } else lo = mid
+      }
+      return { bytes: best, met: true }
+    })
   }
 
-  private decode(c: Candidate) {
-    let p = this.decoded.get(c.key)
-    if (!p) {
-      p = (async () => {
-        const doc = this.rawDoc ??= PDFDocument.load(this.source, { updateMetadata: false })
-        const stream = (await doc).context.lookup(c.ref)
-        if (!(stream instanceof PDFRawStream)) return null
-        if (c.kind === 'jpeg') {
-          const bmp = await this.codec.decodeJpeg(stream.contents)
-          // A JPEG carrying EXIF rotation decodes turned; PDF viewers ignore EXIF, so leave it alone.
-          return bmp.width === c.width && bmp.height === c.height ? bmp : null
-        }
-        const rowBytes = c.width * c.components
-        // Never unpack more than the image claims to need, whatever the data says.
-        const expected = (c.predictor >= 10 ? rowBytes + 1 : rowBytes) * c.height
-        let samples = inflateAtMost(stream.contents, expected)
-        if (c.predictor >= 10) samples = unPng(samples, rowBytes, c.components, c.height)
-        if (samples.length < rowBytes * c.height) return null
-        const rgba = new Uint8ClampedArray(c.width * c.height * 4)
-        for (let i = 0, j = 0; i < c.width * c.height; i++, j += c.components) {
-          const r = samples[j]
-          rgba[i * 4] = r
-          rgba[i * 4 + 1] = c.components === 3 ? samples[j + 1] : r
-          rgba[i * 4 + 2] = c.components === 3 ? samples[j + 2] : r
-          rgba[i * 4 + 3] = 255
-        }
-        return this.codec.fromRGBA(rgba, c.width, c.height)
-      })().catch(() => null)
-      this.decoded.set(c.key, p)
+  /** Reads and decodes a picture from the document being worked on. */
+  private async decode(doc: PDFDocument, c: Candidate): Promise<B | null> {
+    const stream = doc.context.lookup(c.ref)
+    if (!(stream instanceof PDFRawStream)) return null
+    if (c.kind === 'jpeg') {
+      const bmp = await this.codec.decodeJpeg(stream.contents)
+      // A JPEG carrying EXIF rotation decodes turned; PDF viewers ignore EXIF, so leave it alone.
+      if (bmp.width === c.width && bmp.height === c.height) return bmp
+      this.codec.release?.(bmp)
+      return null
     }
-    return p
+    const rowBytes = c.width * c.components
+    // Never unpack more than the image claims to need, whatever the data says.
+    const expected = (c.predictor >= 10 ? rowBytes + 1 : rowBytes) * c.height
+    let samples = inflateAtMost(stream.contents, expected)
+    if (c.predictor >= 10) samples = unPng(samples, rowBytes, c.components, c.height)
+    if (samples.length < rowBytes * c.height) return null
+    const rgba = new Uint8ClampedArray(c.width * c.height * 4)
+    for (let i = 0, j = 0; i < c.width * c.height; i++, j += c.components) {
+      const r = samples[j]
+      rgba[i * 4] = r
+      rgba[i * 4 + 1] = c.components === 3 ? samples[j + 1] : r
+      rgba[i * 4 + 2] = c.components === 3 ? samples[j + 2] : r
+      rgba[i * 4 + 3] = 255
+    }
+    return this.codec.fromRGBA(rgba, c.width, c.height)
   }
-  private rawDoc: Promise<PDFDocument> | null = null
 
-  private encode(c: Candidate, capPx: number, quality: number) {
+  private async encode(doc: PDFDocument, c: Candidate, capPx: number, quality: number): Promise<Uint8Array | null> {
     const scale = Math.min(1, capPx / Math.max(c.width, c.height))
     const w = Math.max(1, Math.round(c.width * scale))
     const h = Math.max(1, Math.round(c.height * scale))
     const k = `${c.key}|${w}x${h}|${quality.toFixed(3)}`
-    let p = this.encoded.get(k)
-    if (!p) {
-      p = this.decode(c)
-        .then((bmp) => (bmp ? this.codec.encodeJpeg(bmp, w, h, quality) : null))
-        .catch(() => null)
-      this.encoded.set(k, p)
+    const known = this.encoded.get(k)
+    if (known !== undefined) {
+      this.encoded.delete(k) // the most recently used goes last, so the oldest is dropped first
+      this.encoded.set(k, known)
+      return known
     }
-    return p
+    if (this.undecodable.has(c.key)) return null
+
+    let bitmap = this.decoded.get(c.key)?.bitmap ?? null
+    let free = () => {}
+    if (!bitmap) {
+      bitmap = await this.decode(doc, c).catch(() => null)
+      if (!bitmap) this.undecodable.add(c.key)
+      else {
+        const pixels = bitmap.width * bitmap.height
+        if (this.heldPixels + pixels <= this.budgets.decodedPixels) {
+          this.decoded.set(c.key, { bitmap, pixels })
+          this.heldPixels += pixels
+        } else {
+          const spent = bitmap // over budget: freed the moment it has been used
+          free = () => this.codec.release?.(spent)
+        }
+      }
+    }
+    let jpeg: Uint8Array | null = null
+    try {
+      if (bitmap) jpeg = await this.codec.encodeJpeg(bitmap, w, h, quality)
+    } catch {
+      jpeg = null
+    } finally {
+      free()
+    }
+    this.remember(k, jpeg)
+    return jpeg
+  }
+
+  private remember(k: string, jpeg: Uint8Array | null) {
+    this.encoded.set(k, jpeg)
+    this.heldBytes += jpeg?.length ?? 0
+    for (const [oldest, bytes] of this.encoded) {
+      if (this.heldBytes <= this.budgets.encodedBytes || oldest === k) break
+      this.encoded.delete(oldest)
+      this.heldBytes -= bytes?.length ?? 0
+    }
   }
 }
 

@@ -1,9 +1,9 @@
 /// <reference lib="webworker" />
 // Heavy lifting runs here so the UI never stutters while a 300-page PDF is being built.
 import { unlockPdf } from './unlock'
-import { PDFArray, PDFDict, PDFDocument, PDFName, PDFObjectCopier, PDFRef, degrees, type PDFImage, type PDFPage } from '@cantoo/pdf-lib'
+import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFObjectCopier, PDFRef, PDFString, degrees, type PDFImage, type PDFPage } from '@cantoo/pdf-lib'
 import { zipSync } from 'fflate'
-import { Compressor, PRESETS, type Codec } from './compress'
+import { Compressor, PRESETS, budgetsFor, type Codec } from './compress'
 
 interface WorkerSource {
   id: string
@@ -116,6 +116,21 @@ async function rebuildForm(out: PDFDocument, sourceIds: string[]) {
   }
   if (!roots.length) return
 
+  // Fields that share a name are one field to a PDF viewer: typing in one changes the other. Two copies of the
+  // same form (two applicants, say) must stay independent, so later ones get a number: name, name_2, name_3.
+  const used = new Set<string>()
+  for (const ref of roots) {
+    const field = out.context.lookup(ref)
+    if (!(field instanceof PDFDict)) continue
+    const title = field.get(N('T'))
+    const name = title instanceof PDFString || title instanceof PDFHexString ? title.decodeText() : undefined
+    if (name === undefined) continue
+    let unique = name
+    for (let n = 2; used.has(unique); n++) unique = `${name}_${n}`
+    used.add(unique)
+    if (unique !== name) field.set(N('T'), PDFHexString.fromText(unique))
+  }
+
   const form = out.context.obj({ Fields: roots })
   // Carry over the first source form's default appearance and fonts, so fields stay editable.
   for (const sid of sourceIds) {
@@ -139,23 +154,34 @@ const browserCodec: Codec<ImageBitmap> = {
   fromRGBA: (rgba, w, h) => createImageBitmap(new ImageData(rgba, w, h)),
   async encodeJpeg(src, w, h, quality) {
     const canvas = new OffscreenCanvas(w, h)
-    const ctx = canvas.getContext('2d')!
-    ctx.imageSmoothingQuality = 'high'
-    ctx.drawImage(src, 0, 0, w, h)
-    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality })
-    return new Uint8Array(await blob.arrayBuffer())
+    try {
+      const ctx = canvas.getContext('2d')!
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(src, 0, 0, w, h)
+      const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality })
+      return new Uint8Array(await blob.arrayBuffer())
+    } finally {
+      canvas.width = canvas.height = 0 // give the canvas's pixels back now, not whenever the browser next collects garbage
+    }
   },
+  release: (bitmap) => bitmap.close(),
 }
 
 /** One compression session per page arrangement, so presets and size targets reuse decoded images. */
 let session: { key: string; compressor: Promise<Compressor<ImageBitmap>> } | null = null
 
+/** Ends the current session and frees the pictures it was keeping. */
+function endSession() {
+  const old = session
+  session = null
+  old?.compressor.then((c) => c.dispose(), () => {})
+}
+
 function compressorFor(pages: JobPage[]) {
   const key = JSON.stringify(pages)
   if (session?.key !== key) {
-    session = {
-      key,
-      compressor: (async () => {
+    endSession()
+    const compressor = (async () => {
         // A single, untouched PDF is compressed as-is, which keeps its bookmarks and form fields.
         const first = sources.get(pages[0]?.sourceId)
         const untouched =
@@ -163,13 +189,17 @@ function compressorFor(pages: JobPage[]) {
           pages.length === first.pageCount &&
           pages.every((p, i) => p.sourceId === first.id && p.index === i && normalize(p.rotation) === 0)
         const base = untouched ? first.bytes : await build(pages)
-        const c = new Compressor(base, browserCodec)
+        const c = new Compressor(base, browserCodec, budgetsFor((navigator as { deviceMemory?: number }).deviceMemory))
         await c.init()
         return c
-      })(),
-    }
+      })()
+    // If it can't be set up, forget it, so asking again starts afresh instead of repeating the same failure.
+    compressor.catch(() => {
+      if (session?.compressor === compressor) session = null
+    })
+    session = { key, compressor }
   }
-  return session.compressor
+  return session!.compressor
 }
 
 self.onmessage = async (e: MessageEvent) => {
@@ -178,7 +208,7 @@ self.onmessage = async (e: MessageEvent) => {
       sources.delete(sid)
       parsed.delete(sid)
     }
-    session = null
+    endSession()
     return
   }
   if (e.data.op === 'unlock') {

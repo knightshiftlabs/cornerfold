@@ -44,10 +44,18 @@ export function runJob(op: 'merge' | 'split' | 'compress', pages: Page[], name: 
   })
   return new Promise((resolve, reject) => {
     waiting.set(id, { resolve, reject })
-    w.postMessage(
-      { id, op, name, options, pages: pages.map(({ sourceId, index, rotation }) => ({ sourceId, index, rotation })), sources: payload },
-      payload.map((s) => s.bytes.buffer),
-    )
+    try {
+      w.postMessage(
+        { id, op, name, options, pages: pages.map(({ sourceId, index, rotation }) => ({ sourceId, index, rotation })), sources: payload },
+        payload.map((s) => s.bytes.buffer),
+      )
+    } catch (e) {
+      // The browser couldn't send it (for example, out of memory). The engine never got these files, so the next
+      // job must send them again, and nothing may be left waiting for an answer that will never come.
+      waiting.delete(id)
+      for (const s of payload) sent.delete(s.id)
+      reject(e instanceof Error ? e : new Error(String(e)))
+    }
   })
 }
 
@@ -58,7 +66,12 @@ export function unlockInWorker(bytes: Uint8Array, password: string): Promise<Unl
   const copy = bytes.slice()
   return new Promise((resolve, reject) => {
     waiting.set(id, { resolve: (r) => resolve(r.unlock!), reject })
-    w.postMessage({ id, op: 'unlock', password, bytes: copy }, [copy.buffer])
+    try {
+      w.postMessage({ id, op: 'unlock', password, bytes: copy }, [copy.buffer])
+    } catch (e) {
+      waiting.delete(id)
+      reject(e instanceof Error ? e : new Error(String(e)))
+    }
   })
 }
 

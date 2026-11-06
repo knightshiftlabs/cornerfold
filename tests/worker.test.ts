@@ -141,3 +141,77 @@ describe('memory', () => {
     expect((await load(await job('merge', pages(s), [s]))).getPageCount()).toBe(1) // re-sent works
   })
 })
+
+describe('a compression that fails can be tried again (regression: the failure was remembered)', () => {
+  it('works once the files it was missing have arrived', async () => {
+    const s = pdf(await scanPdf(1), 1)
+    const p = pages(s)
+    received.length = 0
+    await handler({ data: { id: ++seq, op: 'compress', name: 'out', pages: p, sources: [], options: { preset: 'balanced' } } }) // the file never arrived
+    expect(received[0].ok).toBe(false)
+    const again = await job('compress', p, [s], { preset: 'balanced' })
+    expect(again.ok).toBe(true)
+    expect(again.stats!.size).toBeLessThan(again.stats!.original)
+  })
+})
+
+describe('merging forms whose fields share names', () => {
+  const fieldsOf = async (m: Msg) =>
+    (await load(m)).getForm().getFields().map((f) => ({ name: f.getName(), value: f.constructor.name === 'PDFTextField' ? (f as unknown as { getText(): string }).getText() : undefined }))
+  const filled = async (text: string) => {
+    const d = await PDFDocument.load(await formPdf())
+    d.getForm().getTextField('name').setText(text)
+    return d.save()
+  }
+
+  it('keeps two copies of the same form independent: later fields are numbered, and keep their own values (regression)', async () => {
+    const a = pdf(await filled('Alice'), 1)
+    const b = pdf(await filled('Bob'), 1)
+    const fields = await fieldsOf(await job('merge', [...pages(a), ...pages(b)], [a, b]))
+    expect(fields.map((f) => f.name)).toEqual(['name', 'agree', 'name_2', 'agree_2'])
+    expect(fields.filter((f) => f.value).map((f) => f.value)).toEqual(['Alice', 'Bob'])
+  })
+
+  it('editing one copy then leaves the other alone', async () => {
+    const a = pdf(await filled('Alice'), 1)
+    const b = pdf(await filled('Bob'), 1)
+    const merged = await load(await job('merge', [...pages(a), ...pages(b)], [a, b]))
+    merged.getForm().getTextField('name').setText('Changed')
+    expect(merged.getForm().getTextField('name_2').getText()).toBe('Bob')
+  })
+
+  it('numbers as many copies as there are', async () => {
+    const copies = [pdf(await formPdf(), 1), pdf(await formPdf(), 1), pdf(await formPdf(), 1)]
+    const fields = await fieldsOf(await job('merge', copies.flatMap((c) => pages(c)), copies))
+    expect(fields.map((f) => f.name).filter((n) => n.startsWith('name'))).toEqual(['name', 'name_2', 'name_3'])
+  })
+
+  it('leaves forms with different field names exactly as they were', async () => {
+    const other = await PDFDocument.create()
+    other.getForm().createTextField('email').addToPage(other.addPage([595, 842]), { x: 40, y: 700, width: 200, height: 24 })
+    const a = pdf(await formPdf(), 1)
+    const b = pdf(await other.save(), 1)
+    expect((await fieldsOf(await job('merge', [...pages(a), ...pages(b)], [a, b]))).map((f) => f.name)).toEqual(['name', 'agree', 'email'])
+  })
+
+  it('does not rename a field that legitimately appears on several pages', async () => {
+    const shared = await PDFDocument.create()
+    const field = shared.getForm().createTextField('name')
+    field.addToPage(shared.addPage([595, 842]), { x: 40, y: 700, width: 200, height: 24 })
+    field.addToPage(shared.addPage([595, 842]), { x: 40, y: 700, width: 200, height: 24 })
+    const a = pdf(await shared.save(), 2)
+    const b = pdf(await formPdf(), 1)
+    const fields = await fieldsOf(await job('merge', [...pages(a), ...pages(b)], [a, b]))
+    expect(fields.map((f) => f.name).filter((n) => n.startsWith('name'))).toEqual(['name', 'name_2']) // one field on two pages, then the other form's
+  })
+
+  it('numbers names with accents and other scripts correctly', async () => {
+    const make = async () => {
+      const d = await PDFDocument.create()
+      d.getForm().createTextField('Prénom').addToPage(d.addPage([595, 842]), { x: 40, y: 700, width: 200, height: 24 })
+      return pdf(await d.save(), 1)
+    }
+    const [a, b] = [await make(), await make()]
+    expect((await fieldsOf(await job('merge', [...pages(a), ...pages(b)], [a, b]))).map((f) => f.name)).toEqual(['Prénom', 'Prénom_2'])
+  })
+})

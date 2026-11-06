@@ -21,6 +21,24 @@ class UnsupportedImageError extends Error {
 }
 const isHeic = (f: File) => /hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name)
 
+/** How many files are read at once. Reading all of them together would hold every one in memory at the same time. */
+const READ_AT_ONCE = 3
+
+/** Like Promise.all over a list, but with at most `limit` running at a time. Results keep the list's order. */
+async function mapLimit<T, R>(items: T[], limit: number, work: (item: T) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(items.length)
+  let next = 0
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++
+        results[i] = await work(items[i])
+      }
+    }),
+  )
+  return results
+}
+
 export async function ingestFiles(files: File[]) {
   const st = useStore.getState()
   const usable = files.filter((f) => isPdf(f) || isImage(f))
@@ -35,14 +53,12 @@ export async function ingestFiles(files: File[]) {
   const problems: string[] = []
   const signed: string[] = []
   const declined: string[] = []
-  const results = await Promise.all(
-    usable.map((f) =>
-      readFile(f).catch((e: unknown) => {
-        if (e instanceof UnlockDeclined) declined.push(f.name)
-        else problems.push(describe(f, e))
-        return null
-      }),
-    ),
+  const results = await mapLimit(usable, READ_AT_ONCE, (f) =>
+    readFile(f).catch((e: unknown) => {
+      if (e instanceof UnlockDeclined) declined.push(f.name)
+      else problems.push(describe(f, e))
+      return null
+    }),
   )
   st.setBusy(null)
 

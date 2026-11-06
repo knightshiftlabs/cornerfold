@@ -8,6 +8,14 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.2.1] - TBD
+
+### Fixed
+- Compressing a long scanned document no longer uses more memory with every page. In our tests, a 24-page scan took the browser from about 430 MB to over 1.4 GB, and it held on to it afterwards, which could crash the tab on a phone. Now it stays under 1 GB, and adding pages barely changes it. The compressed result is exactly the same as before.
+- Adding many files at once no longer reads them all at the same time, which could use a lot of memory. They are read a few at a time, and the pages still appear in the order you added the files.
+- After a compression fails (for example, when the browser runs short of memory), trying again now works, instead of repeating the same failure.
+- Merging two copies of the same form, such as two applicants’ forms, no longer links their fields. The later copy’s fields are numbered (name, name_2), so typing in one no longer changes the other.
+
 ## [1.2.0] - 2026-11-06
 
 ### Added

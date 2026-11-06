@@ -120,3 +120,13 @@ export async function unsupportedProtectionPdf() {
   doc.context.trailerInfo.Encrypt = doc.context.register(doc.context.obj({ Filter: 'Adobe.PubSec', SubFilter: 'adbe.pkcs7.s5', V: 4, Length: 128 }))
   return doc.save({ useObjectStreams: false })
 }
+
+/** A PDF of `count` pages, each one a different 480 x 640 photo, so every page has an image worth compressing. */
+export async function photosPdf(count: number) {
+  const d = await PDFDocument.create()
+  for (let i = 0; i < count; i++) {
+    const p = d.addPage([360, 480])
+    p.drawImage(await d.embedJpg(await photoJpeg(480, 640, i * 37, 95)), { x: 0, y: 0, width: 360, height: 480 })
+  }
+  return d.save()
+}

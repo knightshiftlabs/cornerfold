@@ -9,7 +9,10 @@ Run everything: `npm test` (about 20 seconds). While working: `npm run test:watc
 | `actions.test.ts` | The buttons: what gets exported, empty inputs, double-clicks, readable error messages |
 | `detection.test.ts` | What happens when a file is added: passwords, restrictions, signatures, damaged or fake files |
 | `compress.test.ts` | Compression quality, size targets, and the files it must leave alone |
-| `worker.test.ts` | The export engine exactly as the app runs it: merge, split, compress, forms, memory |
+| `worker.test.ts` | The export engine exactly as the app runs it: merge, split, compress, forms (including merging copies of the same form), retrying a failed compression |
+| `memory.test.ts` | How much compression keeps in memory: the budget for decoded pictures, freeing, jobs taking turns, identical output whatever the budget, smaller budgets for small devices |
+| `engine.test.ts` | The messages between the page and the PDF engine, including when the browser can't send one |
+| `ingestLimits.test.ts` | Adding many files at once: only a few are read together, and pages keep the order the files were given |
 | `store.test.ts` | Editing, undo and redo, selection, freeing memory |
 | `bombs.test.ts` | Deliberately malicious files: images that claim to be enormous, data that unpacks far beyond what it declares, fake page counts, absurd nesting, loops in form fields |
 | `jpeg.test.ts` | Removing a photo's hidden details (camera, date, GPS, previews, comments, trailing data) without touching the picture: baseline, progressive and CMYK files |
