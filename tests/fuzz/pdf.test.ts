@@ -3,7 +3,7 @@
 // export is not. Failing inputs are saved to tests/fuzz/failures/ so they can be replayed.
 import { beforeAll, expect, it } from 'vitest'
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument } from '@cantoo/pdf-lib'
 import { installBrowserImageApis } from '../helpers/canvas'
 import { annotatedPdf, formPdf, inheritedRotationPdf, mixedSizesPdf, textPdf } from '../helpers/fixtures'
 import { createCanvas } from '@napi-rs/canvas'

@@ -2,7 +2,7 @@
 // we only re-encode raster images that are larger than they need to be.
 // The image codec is injected, so this runs in a browser worker (OffscreenCanvas)
 // and in Node tests alike.
-import { PDFArray, PDFDict, PDFDocument, PDFName, PDFNumber, PDFRawStream, PDFRef, type PDFObject } from 'pdf-lib'
+import { PDFArray, PDFDict, PDFDocument, PDFName, PDFNumber, PDFRawStream, PDFRef, type PDFObject } from '@cantoo/pdf-lib'
 import { unzlibSync } from 'fflate'
 
 export interface Codec<B extends { width: number; height: number }> {

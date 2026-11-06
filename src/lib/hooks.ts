@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from './store'
 import { ingestFiles } from './ingest'
 import { deleteSelected, exportPdf, pickFiles, rotateTargets } from './actions'
+import { promptOpen } from './passwords'
 
 export function useShortcuts() {
   useEffect(() => {
@@ -9,7 +10,7 @@ export function useShortcuts() {
       const el = e.target
       if (el instanceof Element && el.closest('input, textarea, [contenteditable="true"]')) return
       const st = useStore.getState()
-      if (st.compressOpen) return
+      if (st.compressOpen || promptOpen()) return
       const mod = e.metaKey || e.ctrlKey
       const k = e.key.toLowerCase()
 

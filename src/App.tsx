@@ -5,6 +5,7 @@ import { EmptyState } from './components/EmptyState'
 import { PageGrid } from './components/PageGrid'
 import { Toast } from './components/Toast'
 import { CompressDialog } from './components/CompressDialog'
+import { PasswordDialog } from './components/PasswordDialog'
 import { DropOverlay, Hints } from './components/Overlays'
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
       {hasPages && <Hints />}
       {dragging && <DropOverlay />}
       <CompressDialog />
+      <PasswordDialog />
       <Toast />
     </>
   )

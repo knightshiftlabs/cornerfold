@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 // Heavy lifting runs here so the UI never stutters while a 300-page PDF is being built.
-import { PDFArray, PDFDict, PDFDocument, PDFName, PDFObjectCopier, PDFRef, degrees, type PDFImage, type PDFPage } from 'pdf-lib'
+import { unlockPdf } from './unlock'
+import { PDFArray, PDFDict, PDFDocument, PDFName, PDFObjectCopier, PDFRef, degrees, type PDFImage, type PDFPage } from '@cantoo/pdf-lib'
 import { zipSync } from 'fflate'
 import { Compressor, PRESETS, type Codec } from './compress'
 
@@ -178,6 +179,17 @@ self.onmessage = async (e: MessageEvent) => {
       parsed.delete(sid)
     }
     session = null
+    return
+  }
+  if (e.data.op === 'unlock') {
+    const { id, bytes, password } = e.data as { id: number; bytes: Uint8Array; password: string }
+    try {
+      const unlock = await unlockPdf(bytes, password)
+      const transfer = unlock.status === 'ok' ? [unlock.bytes.buffer] : []
+      ;(self as unknown as DedicatedWorkerGlobalScope).postMessage({ id, ok: true, unlock }, transfer)
+    } catch (err) {
+      ;(self as unknown as DedicatedWorkerGlobalScope).postMessage({ id, ok: false, error: err instanceof Error ? err.message : String(err) })
+    }
     return
   }
   const { id, op, name, pages, sources: incoming, options } = e.data as {

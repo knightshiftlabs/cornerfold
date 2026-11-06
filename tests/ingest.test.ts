@@ -3,7 +3,10 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { installBrowserImageApis } from './helpers/canvas'
-import { fixture, formPdf, textPdf } from './helpers/fixtures'
+import { contains } from '../src/lib/bytes'
+import { fixture, formPdf, textPdf, unsupportedProtectionPdf } from './helpers/fixtures'
+import { PASSWORD, lockedPdf } from './helpers/lockedSamples'
+import { askPassword, askRestricted } from '../src/lib/passwords'
 
 vi.mock('../src/lib/pdf', async () => {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
@@ -14,7 +17,11 @@ vi.mock('../src/lib/pdf', async () => {
     releaseSource: () => {},
   }
 })
-vi.mock('../src/lib/engine', () => ({ getWorker: () => {}, runJob: vi.fn() }))
+vi.mock('../src/lib/engine', async () => {
+  const { unlockPdf } = await import('../src/lib/unlock') // the real unlocking, without the worker around it
+  return { getWorker: () => {}, runJob: vi.fn(), unlockInWorker: unlockPdf }
+})
+vi.mock('../src/lib/passwords', () => ({ askPassword: vi.fn(), askRestricted: vi.fn() })) // the person's answers, scripted per test
 
 let ingestFiles: typeof import('../src/lib/ingest').ingestFiles
 let jpegOrientation: typeof import('../src/lib/ingest').jpegOrientation
@@ -78,8 +85,6 @@ describe('files that need a warning', () => {
 
 describe('files that must be refused, each with its own explanation', () => {
   it.each([
-    ['password.pdf', 'locked.pdf', /needs a password/],
-    ['restricted.pdf', 'statement.pdf', /editing restrictions/],
     ['corrupted.pdf', 'broken.pdf', /damaged, or it may not really be a PDF/],
     ['not-a-pdf.pdf', 'fake.pdf', /damaged, or it may not really be a PDF/],
   ])('%s', async (fixtureName, name, message) => {
@@ -133,5 +138,91 @@ describe('phone photo orientation', () => {
     expect(jpegOrientation(new ArrayBuffer(0))).toBe(1) // empty
     expect(jpegOrientation(buf(new Uint8Array([0xff, 0xd8, 0xff])))).toBe(1) // truncated header
     expect(jpegOrientation(buf(fixture('signed.pdf')))).toBe(1) // not a JPEG at all
+  })
+})
+
+describe('protected PDFs are opened with the person’s password', () => {
+  const ask = vi.mocked(askPassword)
+  const confirm = vi.mocked(askRestricted)
+  beforeEach(() => {
+    ask.mockReset()
+    confirm.mockReset()
+  })
+  const sourceBytes = () => Object.values(useStore.getState().sources)[0].bytes
+
+  it.each(['aes256', 'aes128', 'rc4_128', 'rc4_40', 'objstm'] as const)('asks for the password and adds an unprotected copy (%s)', async (kind) => {
+    ask.mockResolvedValueOnce(PASSWORD)
+    await ingestFiles([file(lockedPdf(kind), 'statement.pdf')])
+    expect(ask).toHaveBeenCalledWith('statement.pdf', false)
+    expect(pageCount()).toBe(2)
+    expect(contains(sourceBytes(), '/Encrypt')).toBe(false)
+    expect(toast()).toBe('')
+  })
+
+  it('asks again after a wrong password, and says it was wrong', async () => {
+    ask.mockResolvedValueOnce('nope').mockResolvedValueOnce(PASSWORD)
+    await ingestFiles([file(lockedPdf('aes256'), 'statement.pdf')])
+    expect(ask).toHaveBeenNthCalledWith(1, 'statement.pdf', false)
+    expect(ask).toHaveBeenNthCalledWith(2, 'statement.pdf', true)
+    expect(pageCount()).toBe(2)
+  })
+
+  it('keeps asking, however many wrong tries it takes', async () => {
+    ask.mockResolvedValueOnce('a').mockResolvedValueOnce('b').mockResolvedValueOnce('c').mockResolvedValueOnce(PASSWORD)
+    await ingestFiles([file(lockedPdf('aes128'), 'statement.pdf')])
+    expect(ask).toHaveBeenCalledTimes(4)
+    expect(pageCount()).toBe(2)
+  })
+
+  it('skips the file when the person declines, with a plain notice and no error', async () => {
+    ask.mockResolvedValueOnce(null)
+    await ingestFiles([file(lockedPdf('aes256'), 'statement.pdf')])
+    expect(pageCount()).toBe(0)
+    expect(toast()).toBe('statement.pdf was skipped because it’s still locked.')
+    expect(useStore.getState().toast?.tone).toBe('ok')
+  })
+
+  it('a file that opens freely but restricts editing: asks first, then adds an editable copy', async () => {
+    confirm.mockResolvedValueOnce(true)
+    await ingestFiles([file(lockedPdf('restricted'), 'statement.pdf')])
+    expect(confirm).toHaveBeenCalledWith('statement.pdf')
+    expect(ask).not.toHaveBeenCalled() // there is no password to ask for
+    expect(pageCount()).toBe(2)
+    expect(contains(sourceBytes(), '/Encrypt')).toBe(false)
+  })
+
+  it('a restricted file is skipped when the person says no', async () => {
+    confirm.mockResolvedValueOnce(false)
+    await ingestFiles([file(lockedPdf('restricted'), 'statement.pdf')])
+    expect(pageCount()).toBe(0)
+    expect(toast()).toMatch(/statement\.pdf was skipped because it’s still locked/)
+  })
+
+  it('a file that is encrypted but restricts nothing opens without asking anything', async () => {
+    await ingestFiles([file(lockedPdf('unrestricted'), 'plain-looking.pdf')])
+    expect(confirm).not.toHaveBeenCalled()
+    expect(ask).not.toHaveBeenCalled()
+    expect(pageCount()).toBe(2)
+  })
+
+  it('explains a protection nobody can open, instead of asking for a password that would never work', async () => {
+    await ingestFiles([file(await unsupportedProtectionPdf(), 'certificate.pdf')])
+    expect(ask).not.toHaveBeenCalled()
+    expect(pageCount()).toBe(0)
+    expect(toast()).toMatch(/certificate\.pdf uses a kind of protection Cornerfold can’t open/)
+  })
+
+  it('adds the ordinary files in the same drop, whatever happens to the locked one', async () => {
+    ask.mockResolvedValueOnce(null)
+    await ingestFiles([file(lockedPdf('aes256'), 'locked.pdf'), file(await textPdf(3), 'notes.pdf')])
+    expect(pageCount()).toBe(3)
+  })
+
+  it('never keeps the password: it is in no file, source or notice', async () => {
+    ask.mockResolvedValueOnce(PASSWORD)
+    await ingestFiles([file(lockedPdf('aes256'), 'statement.pdf')])
+    const kept = JSON.stringify(Object.values(useStore.getState().sources).map((s) => ({ ...s, bytes: undefined }))) + toast()
+    expect(kept).not.toContain(PASSWORD)
+    expect(contains(sourceBytes(), PASSWORD)).toBe(false)
   })
 })

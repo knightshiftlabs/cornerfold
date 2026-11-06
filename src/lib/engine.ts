@@ -1,7 +1,8 @@
 import { useStore, type Page } from './store'
+import type { UnlockResult } from './unlock'
 
 type OutFile = { name: string; bytes: Uint8Array }
-export type JobResult = { files: OutFile[]; stats?: { original: number; size: number; met: boolean } }
+export type JobResult = { files: OutFile[]; stats?: { original: number; size: number; met: boolean }; unlock?: UnlockResult }
 export type JobOptions = { preset?: 'light' | 'balanced' | 'smallest'; target?: number }
 type Waiter = { resolve: (r: JobResult) => void; reject: (e: Error) => void }
 
@@ -14,11 +15,11 @@ export function getWorker() {
   if (worker) return worker
   worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
   worker.onmessage = (e) => {
-    const { id, ok, files, stats, error } = e.data
+    const { id, ok, files, stats, unlock, error } = e.data
     const w = waiting.get(id)
     if (!w) return
     waiting.delete(id)
-    if (ok) w.resolve({ files, stats })
+    if (ok) w.resolve({ files, stats, unlock })
     else w.reject(new Error(error))
   }
   worker.onerror = () => {
@@ -47,6 +48,17 @@ export function runJob(op: 'merge' | 'split' | 'compress', pages: Page[], name: 
       { id, op, name, options, pages: pages.map(({ sourceId, index, rotation }) => ({ sourceId, index, rotation })), sources: payload },
       payload.map((s) => s.bytes.buffer),
     )
+  })
+}
+
+/** Opens a protected PDF with a password ('' to test whether none is needed). The bytes are copied, not moved. */
+export function unlockInWorker(bytes: Uint8Array, password: string): Promise<UnlockResult> {
+  const w = getWorker()
+  const id = ++seq
+  const copy = bytes.slice()
+  return new Promise((resolve, reject) => {
+    waiting.set(id, { resolve: (r) => resolve(r.unlock!), reject })
+    w.postMessage({ id, op: 'unlock', password, bytes: copy }, [copy.buffer])
   })
 }
 

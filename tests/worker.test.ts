@@ -1,6 +1,6 @@
 // The export engine, exactly as the app runs it: messages in, files out.
 import { beforeAll, describe, expect, it } from 'vitest'
-import { PDFDocument, PDFName } from 'pdf-lib'
+import { PDFDocument, PDFName } from '@cantoo/pdf-lib'
 import { unzipSync } from 'fflate'
 import { installBrowserImageApis } from './helpers/canvas'
 import { annotatedPdf, bookmarkedPdf, formPdf, inheritedRotationPdf, manyPagesPdf, mixedSizesPdf, scanPdf, textPdf } from './helpers/fixtures'

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { PDFDocument, PDFName, PDFRawStream } from 'pdf-lib'
+import { PDFDocument, PDFName, PDFRawStream } from '@cantoo/pdf-lib'
 import { zlibSync } from 'fflate'
 import { Compressor, PRESETS } from '../src/lib/compress'
 import { nodeCodec } from './helpers/canvas'

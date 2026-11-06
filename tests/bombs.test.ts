@@ -1,6 +1,6 @@
 // Deliberately malicious files: they must fail safely, never freeze or exhaust memory.
 import { beforeAll, describe, expect, it } from 'vitest'
-import { PDFArray, PDFDocument, PDFName, PDFNumber, PDFRawStream } from 'pdf-lib'
+import { PDFArray, PDFDocument, PDFName, PDFNumber, PDFRawStream } from '@cantoo/pdf-lib'
 import { zlibSync } from 'fflate'
 import { Compressor, MAX_IMAGE_PIXELS, PRESETS, inflateAtMost } from '../src/lib/compress'
 import { installBrowserImageApis, nodeCodec } from './helpers/canvas'

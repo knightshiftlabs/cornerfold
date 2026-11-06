@@ -8,6 +8,16 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.2.0] - TBD
+
+### Added
+- Password-protected PDFs can now be opened. When you add one, Cornerfold asks for its password, opens a copy on your device, and from then on it works like any other file: merge, rearrange, split, rotate, compress. The password is used only on your device to open the file, and is never stored or sent. The copy, and anything you export from it, has no password and none of the original’s editing or printing restrictions.
+- PDFs that open without a password but restrict editing or printing, which is common for bank statements, can now be worked on too. Cornerfold asks first, then makes an editable copy. Only use this for documents you’re allowed to change.
+
+### Changed
+- PDFs that are encrypted but restrict nothing now open without any message. Before, they were refused as “restricted”.
+- Privacy policy and terms: explain how passwords and restrictions are handled, and that you are responsible for having the right to open the documents you unlock.
+
 ## [1.1.11] - 2026-11-06
 
 ### Security

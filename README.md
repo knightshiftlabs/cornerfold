@@ -27,11 +27,11 @@ The whole v1 is one idea: every tool is "arrange a list of pages, then write it 
 
 `src/lib/store.ts` holds the page list. Every edit goes through `commit()`, so everything is undoable (100 steps).
 
-`src/lib/ingest.ts` reads dropped, picked or pasted files. An upright JPEG is embedded without being re-encoded, after `src/lib/jpeg.ts` strips the hidden details a photo carries (camera, date, GPS location, previews, comments); PNGs go in as they are, and the PDF writer keeps only their pixels. Rotated phone photos are redrawn upright using their EXIF orientation, which drops those details too. Password-protected PDFs are detected up front.
+`src/lib/ingest.ts` reads dropped, picked or pasted files. An upright JPEG is embedded without being re-encoded, after `src/lib/jpeg.ts` strips the hidden details a photo carries (camera, date, GPS location, previews, comments); PNGs go in as they are, and the PDF writer keeps only their pixels. Rotated phone photos are redrawn upright using their EXIF orientation, which drops those details too. Protected PDFs are opened with the password the person types: `src/lib/passwords.ts` asks for it, one file at a time, and `src/lib/unlock.ts` decrypts a copy inside the worker into a file with no password and no restrictions. The password is never stored.
 
 `src/lib/pdf.ts` renders thumbnails with pdf.js only when a card scrolls near view, three at a time, cached per session. pdf.js is lazy-loaded and prefetched on idle, so first paint is about 72 KB of gzipped JS.
 
-`src/lib/worker.ts` builds output PDFs with pdf-lib in a Web Worker, so the UI never freezes on big files. Each source's pages are copied in a single call so shared fonts and images are embedded once. Source bytes cross into the worker once per file. Outputs contain no author, creator or producer metadata.
+`src/lib/worker.ts` builds output PDFs with `@cantoo/pdf-lib` (a maintained fork of pdf-lib) in a Web Worker, so the UI never freezes on big files. Each source's pages are copied in a single call so shared fonts and images are embedded once. Source bytes cross into the worker once per file. Outputs contain no author, creator or producer metadata.
 
 ## Privacy guarantees, and what enforces each one
 
@@ -89,4 +89,4 @@ Not planned: anything that needs a server to process files, such as converting W
 
 ## Known limits
 
-Requires a modern browser (Chrome/Edge 119+, Safari 17.4+, Firefox 121+). PDFs that need a password, or carry editing restrictions, can't be edited yet. Compression leaves CMYK (print) and some rarer image types untouched. iPhone HEIC photos only open in browsers that can decode them, mainly Safari. Images become pages at 96 dpi; there are no paper-size options yet.
+Requires a modern browser (Chrome/Edge 119+, Safari 17.4+, Firefox 121+). Protected PDFs open with their password into an unprotected copy; those protected in a way that needs a certificate can't be opened. Compression leaves CMYK (print) and some rarer image types untouched. iPhone HEIC photos only open in browsers that can decode them, mainly Safari. Images become pages at 96 dpi; there are no paper-size options yet.

@@ -1,7 +1,7 @@
 // Test documents, generated on the fly so the repo stays small. Tiny files that need
 // special tools to make (encrypted, signed, corrupted) live in tests/fixtures/.
 import { readFileSync } from 'node:fs'
-import { PDFDocument, PDFName, PDFNumber, StandardFonts, rgb } from 'pdf-lib'
+import { PDFDocument, PDFName, PDFNumber, StandardFonts, rgb } from '@cantoo/pdf-lib'
 import { createCanvas } from '@napi-rs/canvas'
 
 export const fixture = (name: string) => new Uint8Array(readFileSync(new URL(`../fixtures/${name}`, import.meta.url)))
@@ -111,4 +111,12 @@ export async function manyPagesPdf(n: number) {
   const f = await d.embedFont(StandardFonts.Helvetica)
   for (let i = 1; i <= n; i++) d.addPage([595, 842]).drawText(`Page ${i}`, { x: 220, y: 420, size: 40, font: f })
   return d.save()
+}
+
+/** A PDF that claims a kind of protection nobody here can open (one that needs a certificate). */
+export async function unsupportedProtectionPdf() {
+  const doc = await PDFDocument.create()
+  doc.addPage()
+  doc.context.trailerInfo.Encrypt = doc.context.register(doc.context.obj({ Filter: 'Adobe.PubSec', SubFilter: 'adbe.pkcs7.s5', V: 4, Length: 128 }))
+  return doc.save({ useObjectStreams: false })
 }

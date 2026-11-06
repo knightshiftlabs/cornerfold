@@ -1,8 +1,9 @@
 import { useStore, type Page, type Source } from './store'
-import { EngineError, openPdf, releaseSource } from './pdf'
+import { EngineError, openPdf } from './pdf'
 import { contains } from './bytes'
 import { stage } from './motion'
-import { getWorker } from './engine'
+import { getWorker, unlockInWorker } from './engine'
+import { askPassword, askRestricted } from './passwords'
 import { stripJpegMetadata } from './jpeg'
 
 const uid = () => crypto.randomUUID()
@@ -10,8 +11,8 @@ const isPdf = (f: File) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name
 const isImage = (f: File) => f.type.startsWith('image/')
 const stem = (name: string) => name.replace(/\.[^.]+$/, '') || 'file'
 
-class PasswordError extends Error {}
-class RestrictedError extends Error {}
+class UnlockDeclined extends Error {} // the person chose to skip a locked file
+class UnsupportedProtectionError extends Error {}
 class EmptyError extends Error {}
 class UnsupportedImageError extends Error {
   constructor(readonly heic: boolean) {
@@ -33,10 +34,12 @@ export async function ingestFiles(files: File[]) {
   st.setBusy(usable.length === 1 ? 'Reading file' : `Reading ${usable.length} files`)
   const problems: string[] = []
   const signed: string[] = []
+  const declined: string[] = []
   const results = await Promise.all(
     usable.map((f) =>
       readFile(f).catch((e: unknown) => {
-        problems.push(describe(f, e))
+        if (e instanceof UnlockDeclined) declined.push(f.name)
+        else problems.push(describe(f, e))
         return null
       }),
     ),
@@ -64,6 +67,8 @@ export async function ingestFiles(files: File[]) {
       `${signed.length === 1 ? `${signed[0]} is` : `${signed.length} of these files are`} digitally signed. Any change, even compressing, will make the signature invalid, though the pages will look the same.`,
       { tone: 'error' },
     )
+  } else if (declined.length) {
+    st.notify(`${declined.length === 1 ? declined[0] : `${declined.length} files`} ${declined.length === 1 ? 'was' : 'were'} skipped because ${declined.length === 1 ? 'it’s' : 'they’re'} still locked.`)
   } else if (skipped) {
     st.notify(`Skipped ${skipped} ${skipped === 1 ? 'file that isn’t' : 'files that aren’t'} a PDF or image.`, { tone: 'error' })
   }
@@ -73,22 +78,9 @@ async function readFile(f: File): Promise<{ source: Source; pages: Page[]; signe
   const id = uid()
   if (!f.size) throw new EmptyError()
   if (isPdf(f)) {
-    const bytes = new Uint8Array(await f.arrayBuffer())
-    if (contains(bytes, '/Encrypt')) {
-      // Encrypted PDFs: either a password is needed to open them, or they open freely but
-      // carry editing restrictions (common for bank statements). Neither can be edited yet.
-      let opened = false
-      try {
-        await openPdf(id, bytes)
-        opened = true
-      } catch (e) {
-        if (e instanceof Error && e.name === 'PasswordException') throw new PasswordError()
-        throw e
-      } finally {
-        releaseSource(id)
-      }
-      if (opened) throw new RestrictedError()
-    }
+    const original = new Uint8Array(await f.arrayBuffer())
+    // Protected PDFs are opened with the password the person types, into a copy with no password and no restrictions.
+    const bytes = contains(original, '/Encrypt') ? await unlockFile(f.name, original) : original
     const doc = await openPdf(id, bytes)
     return {
       source: { id, name: stem(f.name), kind: 'pdf', bytes, pageCount: doc.numPages },
@@ -111,11 +103,32 @@ async function readFile(f: File): Promise<{ source: Source; pages: Page[]; signe
   }
 }
 
+/**
+ * Returns the bytes of an unprotected copy. Files that open without a password and restrict nothing are
+ * used as they are. A file that opens without one but withholds permissions (common for bank statements)
+ * needs the person's agreement first. A file that needs a password asks for it, as often as it takes.
+ */
+async function unlockFile(name: string, bytes: Uint8Array): Promise<Uint8Array> {
+  let result = await unlockInWorker(bytes, '')
+  if (result.status === 'not-encrypted') return bytes
+  if (result.status === 'ok') {
+    if (result.restricted && !(await askRestricted(name))) throw new UnlockDeclined()
+    return result.bytes
+  }
+  let wrong = false
+  while (result.status === 'password-needed' || result.status === 'wrong-password') {
+    const password = await askPassword(name, wrong)
+    if (password === null) throw new UnlockDeclined()
+    result = await unlockInWorker(bytes, password)
+    if (result.status === 'ok') return result.bytes
+    wrong = true
+  }
+  throw new UnsupportedProtectionError()
+}
+
 function describe(f: File, e: unknown) {
   if (e instanceof EmptyError) return `${f.name} is empty.`
-  if (e instanceof PasswordError) return `${f.name} needs a password to open. Remove the password in the app that made it, then try again.`
-  if (e instanceof RestrictedError)
-    return `${f.name} has editing restrictions set by whoever made it, which is common for bank statements. Cornerfold can’t edit restricted PDFs yet.`
+  if (e instanceof UnsupportedProtectionError) return `${f.name} uses a kind of protection Cornerfold can’t open, such as one that needs a certificate.`
   if (e instanceof UnsupportedImageError)
     return e.heic
       ? `${f.name} is an iPhone photo (HEIC), which this browser can’t open. Share it as a JPEG instead, or set your iPhone camera to “Most Compatible”.`

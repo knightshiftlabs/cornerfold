@@ -16,7 +16,10 @@ Run everything: `npm test` (about 20 seconds). While working: `npm run test:watc
 | `photoPrivacy.test.ts` | The same promise end to end: a photo or PNG added through the real import code and exported by the real engine carries none of it |
 | `report.test.ts` | The "Report a problem" email draft: only the version and the browser, safely encoded |
 | `stampDate.test.ts` | Release dates: India's date, the changelog entry, which policy pages get dated, and the safety stops, including a real run in a scratch repository |
-| `ui.test.tsx` | The interface in a simulated browser: clicks, shortcuts, the compress panel, the privacy badge |
+| `unlock.test.ts` | Opening protected PDFs: every kind of encryption, wrong passwords, restricted files, and that the unprotected copy is a real ordinary PDF |
+| `passwords.test.ts` | The questions about locked files: one at a time, and nothing kept afterwards |
+| `unlockFlow.test.ts` | A locked file end to end: added, answered for, then exported, split and compressed, with unprotected results |
+| `ui.test.tsx` | The interface in a simulated browser: clicks, shortcuts, the compress panel, the privacy badge, the password dialog |
 
 Test documents are generated on the fly in `helpers/fixtures.ts`. The few that need special
 tools to make (encrypted, signed, damaged, CMYK) are small files in `fixtures/`.
