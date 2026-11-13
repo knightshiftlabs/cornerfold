@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error: plain JavaScript, shared with the browser tests
-import { headersFor, parseHeaders } from './e2e/server.mjs'
+import { NOT_SERVED, headersFor, parseHeaders, startServer } from './e2e/server.mjs'
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -66,5 +66,19 @@ describe('how the test server reads _headers, which must match Cloudflare', () =
     expect(headersFor(rules, '/a/c')).toEqual({ 'x-a': 'one, two', 'x-b': 'kept' })
     expect(headersFor(rules, '/a/b')).toEqual({ 'x-b': 'kept' })
     expect(headersFor(rules, '/')).toEqual({ 'x-a': 'one', 'x-b': 'kept' })
+  })
+})
+
+describe('the test server serves the build as Cloudflare does', () => {
+  // The 1.3.2 live check compared _headers, which Cloudflare reads but never serves, so it failed for the wrong
+  // reason. The test server now refuses those files too, and the live check skips them.
+  it('Cloudflare’s own setup files are never served', async () => {
+    const server = await startServer({ root: 'public', port: 0 })
+    try {
+      for (const path of NOT_SERVED) expect((await fetch(server.url + path)).status, path).toBe(404)
+      expect((await fetch(server.url + '/privacy')).status).toBe(200)
+    } finally {
+      await server.close()
+    }
   })
 })

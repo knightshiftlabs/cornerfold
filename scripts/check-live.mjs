@@ -8,7 +8,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { headersFor, parseHeaders, removedFor } from '../tests/e2e/server.mjs'
+import { NOT_SERVED, headersFor, parseHeaders, removedFor } from '../tests/e2e/server.mjs'
 
 const args = process.argv.slice(2)
 const site = (args.find((a) => /^https?:\/\//.test(a)) ?? 'https://cornerfold.org').replace(/\/$/, '')
@@ -29,7 +29,8 @@ async function get(path) {
 async function check() {
   const results = []
   const ok = (label, pass, detail = '') => results.push({ label, pass, detail })
-  const built = files(dist)
+  // Cloudflare's own setup files are in the build but are never served, so they are not compared.
+  const built = files(dist).filter((f) => !NOT_SERVED.has(addressOf(f)))
 
   // 1. Every file, byte for byte.
   const differ = []

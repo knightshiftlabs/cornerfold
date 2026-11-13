@@ -40,6 +40,9 @@ export function parseHeaders(text) {
   return rules
 }
 
+/** Files Cloudflare Pages reads to set up the site and never serves: asking for them gives 404. */
+export const NOT_SERVED = new Set(['/_headers', '/_redirects', '/_routes.json'])
+
 const matches = (pattern, path) => (pattern.endsWith('*') ? path.startsWith(pattern.slice(0, -1)) : path === pattern)
 
 /**
@@ -79,7 +82,7 @@ export function startServer({ root = 'dist', port = 0, headersFile = 'public/_he
     const candidates = extname(path) ? [path] : [path, `${path}.html`]
     for (const candidate of candidates) {
       const file = join(base, candidate)
-      if (!file.startsWith(base + sep) || hidden.has(candidate)) continue
+      if (!file.startsWith(base + sep) || hidden.has(candidate) || NOT_SERVED.has(candidate)) continue
       try {
         const body = await readFile(file)
         res.writeHead(200, { ...headers, 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream' })
