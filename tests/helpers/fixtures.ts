@@ -6,7 +6,7 @@ import { createCanvas } from '@napi-rs/canvas'
 
 export const fixture = (name: string) => new Uint8Array(readFileSync(new URL(`../fixtures/${name}`, import.meta.url)))
 
-async function photoJpeg(w: number, h: number, seed = 0, quality = 95) {
+export async function photoJpeg(w: number, h: number, seed = 0, quality = 95) {
   const c = createCanvas(w, h)
   const x = c.getContext('2d')
   x.fillStyle = `hsl(${seed},40%,85%)`

@@ -97,15 +97,58 @@ async function renderImage(source: Source) {
   const canvas = document.createElement('canvas')
   canvas.width = bmp.width
   canvas.height = bmp.height
-  canvas.getContext('2d')!.drawImage(bmp, 0, 0)
+  const ctx = canvas.getContext('2d')!
+  // Thumbnails are JPEG, which has no transparency: without paper behind it, a see-through area turns black.
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.drawImage(bmp, 0, 0)
   bmp.close()
   return toObjectUrl(canvas)
 }
 
-const toObjectUrl = (canvas: HTMLCanvasElement) =>
+const toObjectUrl = (canvas: HTMLCanvasElement, quality = 0.85, type: 'image/jpeg' | 'image/png' = 'image/jpeg') =>
   new Promise<string>((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(URL.createObjectURL(b)) : reject(new Error('Encode failed'))), 'image/jpeg', 0.85),
+    canvas.toBlob((b) => (b ? resolve(URL.createObjectURL(b)) : reject(new Error('Encode failed'))), type, quality),
   )
+
+/**
+ * A large, sharp picture of one page for the preview, already turned by `rotation` degrees, with its longest
+ * side `longPx` pixels. The caller revokes the URL when done with it.
+ */
+export async function renderLarge(source: Source, index: number, rotation: number, longPx: number, type: 'image/jpeg' | 'image/png' = 'image/jpeg') {
+  const turn = ((rotation % 360) + 360) % 360
+  const canvas = document.createElement('canvas')
+  try {
+    if (source.kind === 'pdf') {
+      const doc = await docs.get(source.id)
+      if (!doc) throw new Error('Document not loaded')
+      const page = await doc.getPage(index + 1)
+      const angle = (page.rotate + turn) % 360
+      const base = page.getViewport({ scale: 1, rotation: angle })
+      const viewport = page.getViewport({ scale: longPx / Math.max(base.width, base.height), rotation: angle })
+      canvas.width = Math.ceil(viewport.width)
+      canvas.height = Math.ceil(viewport.height)
+      await page.render({ canvasContext: canvas.getContext('2d')!, viewport }).promise
+      page.cleanup()
+    } else {
+      const landscape = (source.width ?? 1) >= (source.height ?? 1)
+      const bmp = await createImageBitmap(new Blob([source.bytes], { type: source.mime }), landscape ? { resizeWidth: longPx } : { resizeHeight: longPx })
+      const quarter = turn % 180 !== 0
+      canvas.width = quarter ? bmp.height : bmp.width
+      canvas.height = quarter ? bmp.width : bmp.height
+      const ctx = canvas.getContext('2d')!
+      ctx.fillStyle = '#fff' // the paper behind any see-through part, as in the exported PDF
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.translate(canvas.width / 2, canvas.height / 2)
+      ctx.rotate((turn * Math.PI) / 180)
+      ctx.drawImage(bmp, -bmp.width / 2, -bmp.height / 2)
+      bmp.close()
+    }
+    return await toObjectUrl(canvas, 0.92, type)
+  } finally {
+    canvas.width = canvas.height = 0
+  }
+}
 
 let active = 0
 const queue: (() => void)[] = []
@@ -123,4 +166,41 @@ function limit<T>(fn: () => Promise<T>): Promise<T> {
     if (active < 3) run()
     else queue.push(run)
   })
+}
+
+/** The longest side, in pixels, of a page saved as an image: 300 dpi on A1 paper. Bigger uses too much memory. */
+const MAX_IMAGE_PX = 10_000
+
+/**
+ * One page as an image file, already turned by `rotation` degrees. PDF pages are drawn at `dpi`; photos are
+ * saved at their own pixels, since drawing them bigger adds no detail.
+ */
+export async function renderPageImage(source: Source, index: number, rotation: number, dpi: number, type: 'image/jpeg' | 'image/png') {
+  const turn = ((rotation % 360) + 360) % 360
+  let longPx: number
+  if (source.kind === 'pdf') {
+    const doc = await docs.get(source.id)
+    if (!doc) throw new Error('Document not loaded')
+    const page = await doc.getPage(index + 1)
+    const base = page.getViewport({ scale: 1 })
+    longPx = Math.min(MAX_IMAGE_PX, Math.round((Math.max(base.width, base.height) * dpi) / 72))
+  } else longPx = Math.max(source.width ?? 1, source.height ?? 1)
+  const url = await renderLarge(source, index, turn, longPx, type)
+  try {
+    return new Uint8Array(await (await fetch(url)).arrayBuffer())
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
+/** The text on one page, as plain lines. Pages that are pictures (scans, photos) have none. */
+export async function pageText(source: Source, index: number) {
+  if (source.kind !== 'pdf') return ''
+  const doc = await docs.get(source.id)
+  if (!doc) throw new Error('Document not loaded')
+  const page = await doc.getPage(index + 1)
+  const content = await page.getTextContent()
+  page.cleanup()
+  const { textFromItems } = await import('./text')
+  return textFromItems(content.items.filter((i): i is typeof i & { str: string; transform: number[] } => 'str' in i) as never)
 }

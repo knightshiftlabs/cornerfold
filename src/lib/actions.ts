@@ -25,7 +25,7 @@ export function download(bytes: Uint8Array, name: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(url), 30_000)
 }
 
-const message = (e: unknown) => {
+export const message = (e: unknown) => {
   const text = e instanceof Error ? e.message : String(e)
   // The PDF engine's parser errors are unreadable; translate the common case.
   if (/parse|invalid object|xref/i.test(text)) return 'one of the files is damaged in a way Cornerfold can’t repair.'

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { arrayMove } from '@dnd-kit/sortable'
+import { DEFAULT_PAPER, type Paper } from './paper'
 
 /** One page on the desk. `rotation` is cumulative degrees so animations never spin backwards. */
 export interface Page {
@@ -21,6 +22,11 @@ export interface Source {
   height?: number
 }
 
+/** The tools that open a panel of their own. */
+export type Tool = 'select' | 'split' | 'paper' | 'preview' | 'images' | 'text' | 'numbers' | 'watermark'
+
+export const newId = () => crypto.randomUUID()
+
 export interface Toast {
   id: number
   text: string
@@ -39,13 +45,30 @@ interface State {
   toast: Toast | null
   compressOpen: boolean
   setCompressOpen: (open: boolean) => void
+  tool: Tool | null
+  openTool: (tool: Tool) => void
+  closeTool: () => void
+  /** The page shown large, while the preview is open. */
+  previewPage: string | null
+  openPreview: (pageId: string) => void
+  /** How photos become pages when exporting. */
+  paper: Paper
+  setPaper: (paper: Paper) => void
 
   addPages: (sources: Source[], pages: Page[]) => void
+  /** Adds pages right after the given page, or at the end. */
+  insertAfter: (afterId: string | null, sources: Source[], pages: Page[]) => void
+  /** Puts a copy of each of these pages straight after it. */
+  duplicate: (ids: Set<string>) => void
+  /** Reverses these pages among themselves, or the whole document when fewer than two are given. */
+  reverse: (ids: Set<string>) => void
   reorder: (activeId: string, overId: string) => void
   rotate: (ids: Set<string>, delta: number) => void
   remove: (ids: Set<string>) => void
   select: (id: string, mode: 'toggle' | 'range') => void
   selectAll: () => void
+  selectOnly: (ids: string[]) => void
+  invertSelection: () => void
   deselect: () => void
   undo: () => void
   redo: () => void
@@ -102,10 +125,38 @@ export const useStore = create<State>((set, get) => {
     toast: null,
     compressOpen: false,
     setCompressOpen: (compressOpen) => set({ compressOpen }),
+    tool: null,
+    openTool: (tool) => set({ tool }),
+    closeTool: () => set({ tool: null, previewPage: null }),
+    previewPage: null,
+    openPreview: (pageId) => set({ tool: 'preview', previewPage: pageId }),
+    paper: DEFAULT_PAPER,
+    setPaper: (paper) => set({ paper }),
 
     addPages: (sources, pages) => {
       set((s) => ({ sources: { ...s.sources, ...Object.fromEntries(sources.map((x) => [x.id, x])) } }))
       commit([...get().pages, ...pages])
+    },
+
+    insertAfter: (afterId, sources, pages) => {
+      set((s) => ({ sources: { ...s.sources, ...Object.fromEntries(sources.map((x) => [x.id, x])) } }))
+      const list = get().pages
+      const at = afterId ? list.findIndex((p) => p.id === afterId) + 1 : list.length
+      commit([...list.slice(0, at || list.length), ...pages, ...list.slice(at || list.length)])
+    },
+
+    duplicate: (ids) => {
+      if (!ids.size) return
+      commit(get().pages.flatMap((p) => (ids.has(p.id) ? [p, { ...p, id: newId() }] : [p])))
+    },
+
+    reverse: (ids) => {
+      const pages = get().pages
+      if (ids.size < 2) return commit([...pages].reverse())
+      const slots = pages.flatMap((p, i) => (ids.has(p.id) ? [i] : []))
+      const out = [...pages]
+      slots.forEach((slot, k) => (out[slot] = pages[slots[slots.length - 1 - k]]))
+      commit(out)
     },
 
     reorder: (activeId, overId) => {
@@ -139,6 +190,8 @@ export const useStore = create<State>((set, get) => {
       }),
 
     selectAll: () => set((s) => ({ selected: new Set(s.pages.map((p) => p.id)) })),
+    selectOnly: (ids) => set({ selected: new Set(ids), anchor: ids[ids.length - 1] ?? null }),
+    invertSelection: () => set((s) => ({ selected: new Set(s.pages.filter((p) => !s.selected.has(p.id)).map((p) => p.id)), anchor: null })),
     deselect: () => set({ selected: new Set(), anchor: null }),
 
     undo: () =>

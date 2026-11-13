@@ -25,6 +25,8 @@ Firebase Hosting works too; move the headers from `_headers` into `firebase.json
 
 The whole v1 is one idea: every tool is "arrange a list of pages, then write it out". Merge, split, reorder, rotate, delete, extract and images-to-PDF are all the same workspace, so there is no tool picker and no page reloads.
 
+Tools that need choices (selecting by number, splitting, page size for photos, saving as images or text, page numbers and watermarks) open from the Tools menu. Their panels live in `src/components/tools/` and are downloaded the first time one is opened. Page numbers and watermarks are drawn in the worker (`src/lib/stamp.ts`), placed by where they appear on screen, so turned pages are handled; the wording and geometry are in `src/lib/stampText.ts`, which has no PDF library in it, so the panels stay small.
+
 `src/lib/store.ts` holds the page list. Every edit goes through `commit()`, so everything is undoable (100 steps).
 
 `src/lib/ingest.ts` reads dropped, picked or pasted files. An upright JPEG is embedded without being re-encoded, after `src/lib/jpeg.ts` strips the hidden details a photo carries (camera, date, GPS location, previews, comments); PNGs go in as they are, and the PDF writer keeps only their pixels. Rotated phone photos are redrawn upright using their EXIF orientation, which drops those details too. Protected PDFs are opened with the password the person types: `src/lib/passwords.ts` asks for it, one file at a time, and `src/lib/unlock.ts` decrypts a copy inside the worker into a file with no password and no restrictions. The password is never stored.
@@ -75,20 +77,18 @@ Any change to the privacy policy or terms gets its own changelog line. The "Last
 
 ## Shortcuts
 
-`R` / `Shift R` rotate, `Delete` remove, `⌘/Ctrl A` select all, `Shift`-click select a range, `Esc` clear, `⌘/Ctrl Z` undo, `⌘/Ctrl Shift Z` redo, `⌘/Ctrl O` add files, `⌘/Ctrl S` export. Paste images straight in.
+`R` / `Shift R` rotate, `Delete` remove, `⌘/Ctrl A` select all, `Shift`-click select a range, `Esc` clear, `⌘/Ctrl Z` undo, `⌘/Ctrl Shift Z` redo, `⌘/Ctrl O` add files, `⌘/Ctrl S` export. In the large preview: `←` / `→` previous and next page, `+` / `−` zoom, `0` fit to the screen, `Esc` close. Paste images straight in.
 
 ## Roadmap
 
-See `CHANGELOG.md` for everything that has shipped (merge, split, reorder, rotate, images to PDF, compression with size targets, installable offline app).
+See `CHANGELOG.md` for everything that has shipped (merge, split, reorder, rotate, images to PDF, compression with size targets, installable offline app, opening password-protected PDFs, page tools, page numbers and watermarks, saving as images or text).
 
-Next: browser-level testing in a real browser, fuzzing and malicious-file tests (see "Testing").
+Next: running the real-browser tests automatically, then fill and sign.
 
-Then (1.2): fill and sign, and PDF to images.
-
-Later: page numbers and watermarks; protect and unlock (needs a PDF encryption library compiled to WebAssembly, which means adding `'wasm-unsafe-eval'` to `script-src` and saying so in the privacy policy).
+Later: reading text from scans (OCR), watermarks in more scripts such as Hindi (needs embedded fonts), and adding a password to a PDF.
 
 Not planned: anything that needs a server to process files, such as converting Word documents. It would break the core promise that files never leave the device.
 
 ## Known limits
 
-Requires a modern browser (Chrome/Edge 119+, Safari 17.4+, Firefox 121+). Protected PDFs open with their password into an unprotected copy; those protected in a way that needs a certificate can't be opened. Compression leaves CMYK (print) and some rarer image types untouched. iPhone HEIC photos only open in browsers that can decode them, mainly Safari. Images become pages at 96 dpi; there are no paper-size options yet.
+Requires a modern browser (Chrome/Edge 119+, Safari 17.4+, Firefox 121+). Protected PDFs open with their password into an unprotected copy; those protected in a way that needs a certificate can't be opened. Compression leaves CMYK (print) and some rarer image types untouched. iPhone HEIC photos only open in browsers that can decode them, mainly Safari. Images become pages at 96 dpi, at their own size unless a page size for photos is chosen; the page cards show the photos themselves, not the paper. Watermarks use Latin letters, numbers and common symbols only. Extracting text works only on text that is really in the PDF, not on scans. Finding blank pages, the large preview and saving as images draw each page in the browser, so they take a while on very long documents.

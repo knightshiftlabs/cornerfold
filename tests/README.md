@@ -9,7 +9,7 @@ Run everything: `npm test` (about 20 seconds). While working: `npm run test:watc
 | `actions.test.ts` | The buttons: what gets exported, empty inputs, double-clicks, readable error messages |
 | `detection.test.ts` | What happens when a file is added: passwords, restrictions, signatures, damaged or fake files |
 | `compress.test.ts` | Compression quality, size targets, and the files it must leave alone |
-| `worker.test.ts` | The export engine exactly as the app runs it: merge, split, compress, forms (including merging copies of the same form), retrying a failed compression |
+| `worker.test.ts` | The export engine exactly as the app runs it: merge, split (into pages, ranges, or parts under a size), compress, blank pages, photos on paper, page numbers and watermarks read back as they appear on screen (including turned pages), forms (including merging copies of the same form), retrying a failed compression |
 | `memory.test.ts` | How much compression keeps in memory: the budget for decoded pictures, freeing, jobs taking turns, identical output whatever the budget, smaller budgets for small devices |
 | `engine.test.ts` | The messages between the page and the PDF engine, including when the browser can't send one |
 | `ingestLimits.test.ts` | Adding many files at once: only a few are read together, and pages keep the order the files were given |
@@ -22,7 +22,15 @@ Run everything: `npm test` (about 20 seconds). While working: `npm run test:watc
 | `unlock.test.ts` | Opening protected PDFs: every kind of encryption, wrong passwords, restricted files, and that the unprotected copy is a real ordinary PDF |
 | `passwords.test.ts` | The questions about locked files: one at a time, and nothing kept afterwards |
 | `unlockFlow.test.ts` | A locked file end to end: added, answered for, then exported, split and compressed, with unprotected results |
-| `ui.test.tsx` | The interface in a simulated browser: clicks, shortcuts, the compress panel, the privacy badge, the password dialog |
+| `ranges.test.ts` | Page numbers as people type them (“1-3, 7, 10-”), and the messages for mistakes |
+| `blank.test.ts` | Telling an empty page from one with something on it: cream paper, scanner dust and edge shadows, a single line |
+| `pageOps.test.ts` | Selecting, duplicating, reversing and inserting pages, each one undoable |
+| `pageTools.test.ts` | The page tools: what they ask the engine for, what they tell the person, and failures |
+| `paper.test.ts` | Where a photo goes on A4 or Letter: margins, orientation, never stretched |
+| `stamp.test.ts` | Page number wording, which characters a watermark can use, and placing text on turned pages |
+| `text.test.ts` | Turning what is read off a page into plain text with sensible line breaks |
+| `exporters.test.ts` | Saving as images or text, and exporting with page numbers or a watermark |
+| `ui.test.tsx` | The interface in a simulated browser: clicks, shortcuts, the compress panel, the privacy badge, the password dialog, the Tools menu and its panels, the large preview, the toolbar on phones |
 
 Test documents are generated on the fly in `helpers/fixtures.ts`. The few that need special
 tools to make (encrypted, signed, damaged, CMYK) are small files in `fixtures/`.
@@ -51,7 +59,8 @@ that installs with the other packages.
 
 `npm run test:fuzz` feeds randomly corrupted PDFs, 400 per run by default (flipped bytes, inserted tokens,
 deleted or duplicated chunks, truncation, extreme numbers) through the same engines the app uses:
-the one that reads files and draws thumbnails, and the one that exports and compresses. Rejecting a
+the one that reads files and draws thumbnails, and the one that exports: merging, compressing, adding
+page numbers and a watermark (on turned pages), splitting by size, and making a blank page. Rejecting a
 broken file is fine. A hang, a crash, or a broken PDF produced from an accepted file is not, and the
 offending input is saved to `tests/fuzz/failures/` so it can be replayed.
 
@@ -75,7 +84,9 @@ Be honest about these; they need a real browser or a person:
 - The security headers and policy (they come from Cloudflare, not the code)
 - Recovering when a new version is deployed while the app is open
 - Redrawing sideways phone photos upright (needs a browser canvas; only reading the rotation is tested)
-- Decoding HEIC, WebP or GIF images (the test stand-in decodes only PNG and JPEG)
+- Decoding HEIC, WebP, AVIF, GIF or BMP images (the test stand-in decodes only PNG and JPEG)
+- Finding blank pages, the large preview, and saving as images or text (they draw pages with pdf.js in the browser)
+- How the toolbar and Tools menu fit on a phone screen (layout needs a real browser)
 - Visual design, dark mode, accessibility with screen readers
 - Very large files close to a device’s memory limit
 

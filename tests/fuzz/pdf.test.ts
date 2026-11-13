@@ -3,6 +3,7 @@
 // export is not. Failing inputs are saved to tests/fuzz/failures/ so they can be replayed.
 import { beforeAll, expect, it } from 'vitest'
 import { mkdirSync, writeFileSync } from 'node:fs'
+import { unzipSync } from 'fflate'
 import { PDFDocument } from '@cantoo/pdf-lib'
 import { installBrowserImageApis } from '../helpers/canvas'
 import { annotatedPdf, formPdf, inheritedRotationPdf, mixedSizesPdf, textPdf } from '../helpers/fixtures'
@@ -139,7 +140,14 @@ it(`survives ${ITERATIONS} corrupted PDFs (seed ${SEED})`, async () => {
     }
     if (!pages) continue
     // 3. Cornerfold's own export and compression, exactly as the app runs them.
-    for (const [op, options] of [['merge', undefined], ['compress', { preset: 'smallest' }]] as const) {
+    const ops = [
+      ['merge', undefined],
+      ['compress', { preset: 'smallest' }],
+      ['stamp', { stamps: { numbers: { position: 'bottom-center', format: 'page-n-of-total', start: 1, size: 11, skipFirst: false }, watermark: { text: 'FUZZ', angle: 45, opacity: 0.2 } } }],
+      ['split', { maxBytes: 20_000 }],
+      ['blank', undefined],
+    ] as const
+    for (const [op, options] of ops) {
       received.length = 0
       const id = `${SEED}-${i}-${op}`
       // pdf.js swaps the global `self` when it opens files; give the engine its reply channel back.
@@ -147,7 +155,7 @@ it(`survives ${ITERATIONS} corrupted PDFs (seed ${SEED})`, async () => {
       const pdfjsSelf = g.self
       g.self = { postMessage: (msg: never) => received.push(msg) }
       try {
-        await within(handler({ data: { id: 1, op, name: 'x', options, sources: [{ id, kind: 'pdf', pageCount: pages, bytes: input }], pages: Array.from({ length: Math.min(pages, 50) }, (_, index) => ({ sourceId: id, index, rotation: 0 })) } }))
+        await within(handler({ data: { id: 1, op, name: 'x', options, sources: [{ id, kind: 'pdf', pageCount: pages, bytes: input }], pages: Array.from({ length: op === 'blank' ? 1 : Math.min(pages, 50) }, (_, index) => ({ sourceId: id, index, rotation: op === 'stamp' ? (index % 4) * 90 : 0 })) } }))
       } catch (e) {
         g.self = pdfjsSelf
         fail(i, input, `export engine ${(e as Error).message === 'HANG' ? 'hung' : `threw instead of reporting an error (${(e as Error).message})`} during ${op}`)
@@ -162,7 +170,9 @@ it(`survives ${ITERATIONS} corrupted PDFs (seed ${SEED})`, async () => {
         tally.exported++
         // Anything we accepted and exported must itself be a valid PDF.
         try {
-          await within(PDFDocument.load(m.files![0].bytes, { updateMetadata: false }))
+          // A split arrives as a ZIP of PDFs: every one of them must be valid.
+          const outputs = op === 'split' ? Object.values(unzipSync(m.files![0].bytes)) : [m.files![0].bytes]
+          for (const bytes of outputs) await within(PDFDocument.load(bytes, { updateMetadata: false }))
         } catch {
           fail(i, input, `${op} produced a broken PDF from an accepted file`)
         }

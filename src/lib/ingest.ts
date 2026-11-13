@@ -160,6 +160,20 @@ function describe(f: File, e: unknown) {
  * comments. Rotated phone photos (EXIF orientation), JPEGs that can't be cleaned that way, and other formats
  * are redrawn upright, which drops those details too.
  */
+/** Whether a picture has see-through parts, judged from a small copy of it. */
+function hasTransparency(bmp: ImageBitmap) {
+  const scale = Math.min(1, 256 / Math.max(bmp.width, bmp.height))
+  const c = document.createElement('canvas')
+  c.width = Math.max(1, Math.round(bmp.width * scale))
+  c.height = Math.max(1, Math.round(bmp.height * scale))
+  const ctx = c.getContext('2d', { willReadFrequently: true })!
+  ctx.drawImage(bmp, 0, 0, c.width, c.height)
+  const alpha = ctx.getImageData(0, 0, c.width, c.height).data
+  c.width = c.height = 0
+  for (let i = 3; i < alpha.length; i += 4) if (alpha[i] < 250) return true
+  return false
+}
+
 async function normalizeImage(f: File) {
   const buf = await f.arrayBuffer()
   const jpeg = f.type === 'image/jpeg'
@@ -174,12 +188,20 @@ async function normalizeImage(f: File) {
   }
 
   const bmp = await createImageBitmap(new Blob([buf], { type: f.type }), { imageOrientation: 'from-image' })
+  // Other formats (WebP, AVIF, GIF, BMP) become JPEG, as a photo saved as PNG would be many times larger,
+  // unless they have see-through parts, which only PNG keeps. An animated GIF gives its first frame.
+  const keepAlpha = !jpeg && hasTransparency(bmp)
   const canvas = document.createElement('canvas')
   canvas.width = bmp.width
   canvas.height = bmp.height
-  canvas.getContext('2d')!.drawImage(bmp, 0, 0)
+  const ctx = canvas.getContext('2d')!
+  if (!keepAlpha) {
+    ctx.fillStyle = '#fff' // anything faintly see-through sits on white paper, not black
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+  }
+  ctx.drawImage(bmp, 0, 0)
   bmp.close()
-  const mime = jpeg ? 'image/jpeg' : 'image/png'
+  const mime = keepAlpha ? 'image/png' : 'image/jpeg'
   const blob = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('Encode failed'))), mime, 0.92))
   return { bytes: new Uint8Array(await blob.arrayBuffer()), mime: mime as 'image/png' | 'image/jpeg', width: canvas.width, height: canvas.height }
 }

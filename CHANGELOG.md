@@ -8,6 +8,30 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.3.0] - TBD
+
+### Added
+- A Tools menu, which holds everything below. On phones it opens from the bottom of the screen.
+- Select pages by typing their numbers, such as 1-3, 7, 10- (a number then a dash means “to the end”), or pick odd pages, even pages or every Nth page. Invert the selection in one tap.
+- Duplicate pages, reverse the page order (or only the selected pages), and insert a blank page the same size as the page next to it.
+- Find blank pages: Cornerfold looks for empty pages, such as the backs of scanned sheets, and selects them so you can check them before deleting.
+- Split by ranges (each range you type becomes its own PDF), every N pages, or by size (as many pages in each PDF as fit under a size you choose, such as 5 MB).
+- Page size for photos: place photos on A4 or Letter pages, with a margin, turned to suit each photo or all the same way. PDF pages are not changed.
+- WebP, AVIF, GIF and BMP images can be added. Images without see-through parts are stored as JPEG, which keeps PDFs small. An animated GIF gives its first frame.
+- A large preview of any page: tap the enlarge button on a page, then zoom in and move between pages, with the arrow keys on a keyboard.
+- Save pages as images: JPG or PNG, at screen, standard or print detail. One page saves as an image; several come together in a ZIP.
+- Extract text: copy the words on the pages, or save them as a text file. Scans and photos have no text to extract, and Cornerfold says which pages those are.
+- Page numbers: six positions, four styles, any starting number, and the option to leave a cover page unnumbered. On turned pages they still sit where you chose, reading upright.
+- Watermarks: see-through text across each page, diagonal or straight, in three strengths. For now they can use Latin letters, numbers and common symbols only.
+- Page numbers and watermarks are added to the exported copy. Your pages in Cornerfold stay as they are.
+
+### Changed
+- On phones, Compress and Split into single pages are in the Tools menu, and while pages are selected the toolbar shows only what you can do with them, so everything fits on the screen.
+
+### Fixed
+- On phones the toolbar was wider than the screen, so the page could scroll sideways, especially with pages selected. It now fits on screens from 320 pixels wide.
+- See-through parts of images showed as black in page thumbnails. They now show as white, as they appear in the exported PDF.
+
 ## [1.2.1] - 2026-11-07
 
 ### Fixed

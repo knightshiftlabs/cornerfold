@@ -2,8 +2,9 @@ import { useStore, type Page } from './store'
 import type { UnlockResult } from './unlock'
 
 type OutFile = { name: string; bytes: Uint8Array }
-export type JobResult = { files: OutFile[]; stats?: { original: number; size: number; met: boolean }; unlock?: UnlockResult }
-export type JobOptions = { preset?: 'light' | 'balanced' | 'smallest'; target?: number }
+export type JobResult = { files: OutFile[]; stats?: { original: number; size: number; met: boolean }; unlock?: UnlockResult; info?: { parts: number; oversize: number } }
+import type { Stamps } from './stampText'
+export type JobOptions = { preset?: 'light' | 'balanced' | 'smallest'; target?: number; groups?: number[][]; maxBytes?: number; stamps?: Stamps }
 type Waiter = { resolve: (r: JobResult) => void; reject: (e: Error) => void }
 
 let worker: Worker | null = null
@@ -15,11 +16,11 @@ export function getWorker() {
   if (worker) return worker
   worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
   worker.onmessage = (e) => {
-    const { id, ok, files, stats, unlock, error } = e.data
+    const { id, ok, files, stats, info, unlock, error } = e.data
     const w = waiting.get(id)
     if (!w) return
     waiting.delete(id)
-    if (ok) w.resolve({ files, stats, unlock })
+    if (ok) w.resolve({ files, stats, info, unlock })
     else w.reject(new Error(error))
   }
   worker.onerror = () => {
@@ -32,7 +33,7 @@ export function getWorker() {
   return worker
 }
 
-export function runJob(op: 'merge' | 'split' | 'compress', pages: Page[], name: string, options?: JobOptions): Promise<JobResult> {
+export function runJob(op: 'merge' | 'split' | 'compress' | 'blank' | 'stamp', pages: Page[], name: string, options?: JobOptions): Promise<JobResult> {
   const w = getWorker()
   const { sources } = useStore.getState()
   const id = ++seq
@@ -46,7 +47,7 @@ export function runJob(op: 'merge' | 'split' | 'compress', pages: Page[], name: 
     waiting.set(id, { resolve, reject })
     try {
       w.postMessage(
-        { id, op, name, options, pages: pages.map(({ sourceId, index, rotation }) => ({ sourceId, index, rotation })), sources: payload },
+        { id, op, name, options: { ...options, paper: useStore.getState().paper }, pages: pages.map(({ sourceId, index, rotation }) => ({ sourceId, index, rotation })), sources: payload },
         payload.map((s) => s.bytes.buffer),
       )
     } catch (e) {

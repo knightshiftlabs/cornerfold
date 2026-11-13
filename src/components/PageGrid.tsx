@@ -11,7 +11,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { RotateCcw, RotateCw, Trash2 } from 'lucide-react'
+import { RotateCcw, RotateCw, Trash2, Maximize2 } from 'lucide-react'
 import { useStore, type Page } from '../lib/store'
 import { getThumb, peekThumb } from '../lib/pdf'
 import { entering } from '../lib/motion'
@@ -68,6 +68,7 @@ const SortablePage = memo(function SortablePage({ page, number }: { page: Page; 
   const selected = useStore((s) => s.selected.has(page.id))
   const select = useStore((s) => s.select)
   const rotate = useStore((s) => s.rotate)
+  const openPreview = useStore((s) => s.openPreview)
   const [enter] = useState(() => {
     const e = entering.get(page.id)
     entering.delete(page.id)
@@ -98,6 +99,9 @@ const SortablePage = memo(function SortablePage({ page, number }: { page: Page; 
       <div
         className={`absolute right-3.5 top-3.5 flex gap-1 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 ${selected ? 'opacity-100' : 'opacity-0'}`}
       >
+        <CardAction label="Enlarge page" onClick={stop(() => openPreview(page.id))}>
+          <Maximize2 />
+        </CardAction>
         <CardAction label="Rotate left" onClick={stop(() => rotate(new Set([page.id]), -90))}>
           <RotateCcw />
         </CardAction>

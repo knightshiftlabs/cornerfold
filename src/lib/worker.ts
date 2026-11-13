@@ -1,6 +1,8 @@
 /// <reference lib="webworker" />
 // Heavy lifting runs here so the UI never stutters while a 300-page PDF is being built.
 import { unlockPdf } from './unlock'
+import { DEFAULT_PAPER, placeImage, type Paper } from './paper'
+import { applyStamps, type Stamps } from './stamp'
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFObjectCopier, PDFRef, PDFString, degrees, type PDFImage, type PDFPage } from '@cantoo/pdf-lib'
 import { zipSync } from 'fflate'
 import { Compressor, PRESETS, budgetsFor, type Codec } from './compress'
@@ -35,7 +37,12 @@ function loadSource(id: string) {
   return doc
 }
 
-async function build(pages: JobPage[]) {
+async function build(pages: JobPage[], paper: Paper = DEFAULT_PAPER) {
+  return (await assemble(pages, paper)).save()
+}
+
+/** The pages in order, as a document that can still be drawn on before it is saved. */
+async function assemble(pages: JobPage[], paper: Paper) {
   // No producer/creator stamps, and source metadata (author, etc.) is not carried over.
   const out = await PDFDocument.create({ updateMetadata: false })
 
@@ -68,16 +75,65 @@ async function build(pages: JobPage[]) {
         img = s.mime === 'image/jpeg' ? await out.embedJpg(s.bytes) : await out.embedPng(s.bytes)
         images.set(s.id, img)
       }
-      // 96 dpi pixels to PDF points
-      const w = s.width! * 0.75
-      const h = s.height! * 0.75
-      page = out.addPage([w, h])
-      page.drawImage(img, { x: 0, y: 0, width: w, height: h })
+      // 96 dpi pixels to PDF points, then onto the paper chosen for photos
+      const { page: size, box } = placeImage(s.width! * 0.75, s.height! * 0.75, paper)
+      page = out.addPage(size)
+      page.drawImage(img, box)
     }
     if (normalize(p.rotation)) page.setRotation(degrees(normalize(page.getRotation().angle + p.rotation)))
   }
   await rebuildForm(out, [...wanted.keys()])
-  return out.save()
+  return out
+}
+
+/** A page's size as it is seen, in points: turned pages have their width and height swapped. */
+async function visualSize(p: JobPage): Promise<[number, number]> {
+  const s = sources.get(p.sourceId)
+  if (!s) throw new Error('Source missing in worker')
+  let width = (s.width ?? 0) * 0.75
+  let height = (s.height ?? 0) * 0.75
+  let turn = p.rotation
+  if (s.kind === 'pdf') {
+    const page = (await loadSource(s.id)).getPage(p.index)
+    ;({ width, height } = page.getSize())
+    turn += page.getRotation().angle
+  }
+  return normalize(turn) % 180 ? [height, width] : [width, height]
+}
+
+const A4: [number, number] = [595.28, 841.89]
+
+/** An empty page, the same size as the page it will sit next to (A4 when there is none). */
+async function blankPage(like: JobPage | undefined) {
+  const doc = await PDFDocument.create({ updateMetadata: false })
+  doc.addPage(like ? await visualSize(like) : A4)
+  return doc.save()
+}
+
+/**
+ * Splits pages into consecutive parts that each stay under `maxBytes`. A page on its own is a safe upper
+ * limit for what it adds to a part (parts share fonts and images, so they come out smaller than the sum),
+ * which keeps every part under the limit without building each one twice. A page that is over the limit
+ * by itself gets a part of its own.
+ */
+async function packBySize(pages: JobPage[], maxBytes: number, paper: Paper) {
+  const groups: number[][] = []
+  let current: number[] = []
+  let size = 0
+  let oversize = 0
+  for (let i = 0; i < pages.length; i++) {
+    const alone = (await build([pages[i]], paper)).length
+    if (alone > maxBytes) oversize++
+    if (current.length && size + alone > maxBytes) {
+      groups.push(current)
+      current = []
+      size = 0
+    }
+    current.push(i)
+    size += alone
+  }
+  if (current.length) groups.push(current)
+  return { groups, oversize }
 }
 
 /**
@@ -177,8 +233,8 @@ function endSession() {
   old?.compressor.then((c) => c.dispose(), () => {})
 }
 
-function compressorFor(pages: JobPage[]) {
-  const key = JSON.stringify(pages)
+function compressorFor(pages: JobPage[], paper: Paper) {
+  const key = JSON.stringify([pages, paper])
   if (session?.key !== key) {
     endSession()
     const compressor = (async () => {
@@ -188,7 +244,7 @@ function compressorFor(pages: JobPage[]) {
           first?.kind === 'pdf' &&
           pages.length === first.pageCount &&
           pages.every((p, i) => p.sourceId === first.id && p.index === i && normalize(p.rotation) === 0)
-        const base = untouched ? first.bytes : await build(pages)
+        const base = untouched ? first.bytes : await build(pages, paper)
         const c = new Compressor(base, browserCodec, budgetsFor((navigator as { deviceMemory?: number }).deviceMemory))
         await c.init()
         return c
@@ -224,18 +280,26 @@ self.onmessage = async (e: MessageEvent) => {
   }
   const { id, op, name, pages, sources: incoming, options } = e.data as {
     id: number
-    op: 'merge' | 'split' | 'compress'
+    op: 'merge' | 'split' | 'compress' | 'blank' | 'stamp'
     name: string
     pages: JobPage[]
     sources: WorkerSource[]
-    options?: { preset?: keyof typeof PRESETS; target?: number }
+    options?: { preset?: keyof typeof PRESETS; target?: number; groups?: number[][]; maxBytes?: number; paper?: Paper; stamps?: Stamps }
   }
+  const paper = options?.paper ?? DEFAULT_PAPER
   for (const s of incoming) sources.set(s.id, s)
   try {
     let files: { name: string; bytes: Uint8Array }[]
     let stats: { original: number; size: number; met: boolean } | undefined
-    if (op === 'compress') {
-      const c = await compressorFor(pages)
+    let info: { parts: number; oversize: number } | undefined
+    if (op === 'blank') {
+      files = [{ name, bytes: await blankPage(pages[0]) }]
+    } else if (op === 'stamp') {
+      const doc = await assemble(pages, paper)
+      await applyStamps(doc, options?.stamps ?? {})
+      files = [{ name, bytes: await doc.save() }]
+    } else if (op === 'compress') {
+      const c = await compressorFor(pages, paper)
       let bytes: Uint8Array
       let met = true
       if (options?.target) ({ bytes, met } = await c.fitUnder(options.target))
@@ -245,17 +309,24 @@ self.onmessage = async (e: MessageEvent) => {
       files = [{ name, bytes }]
       stats = { original: c.source.length, size: bytes.length, met }
     } else if (op === 'merge') {
-      files = [{ name, bytes: await build(pages) }]
+      files = [{ name, bytes: await build(pages, paper) }]
     } else {
-      const width = Math.max(2, String(pages.length).length)
+      // One PDF per page by default; or one per group of pages; or as many pages per part as fit under a size.
+      let groups = options?.groups ?? pages.map((_, i) => [i])
+      let oversize = 0
+      if (options?.maxBytes) ({ groups, oversize } = await packBySize(pages, options.maxBytes, paper))
+      const single = groups.every((g) => g.length === 1)
+      const width = Math.max(2, String(groups.length).length)
       const entries: Record<string, Uint8Array> = {}
-      for (let i = 0; i < pages.length; i++) {
-        entries[`${name}-p${String(i + 1).padStart(width, '0')}.pdf`] = await build([pages[i]])
+      for (let i = 0; i < groups.length; i++) {
+        const label = `${single ? 'p' : 'part-'}${String(i + 1).padStart(width, '0')}`
+        entries[`${name}-${label}.pdf`] = await build(groups[i].map((ix) => pages[ix]), paper)
       }
       // PDFs are already compressed; store them as-is for speed.
-      files = [{ name: `${name}-pages.zip`, bytes: zipSync(entries, { level: 0 }) }]
+      files = [{ name: `${name}-${single ? 'pages' : 'parts'}.zip`, bytes: zipSync(entries, { level: 0 }) }]
+      info = { parts: groups.length, oversize }
     }
-    ;(self as unknown as DedicatedWorkerGlobalScope).postMessage({ id, ok: true, files, stats }, files.map((f) => f.bytes.buffer))
+    ;(self as unknown as DedicatedWorkerGlobalScope).postMessage({ id, ok: true, files, stats, info }, files.map((f) => f.bytes.buffer))
   } catch (err) {
     ;(self as unknown as DedicatedWorkerGlobalScope).postMessage({ id, ok: false, error: err instanceof Error ? err.message : String(err) })
   }

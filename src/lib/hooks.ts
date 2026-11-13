@@ -10,7 +10,7 @@ export function useShortcuts() {
       const el = e.target
       if (el instanceof Element && el.closest('input, textarea, [contenteditable="true"]')) return
       const st = useStore.getState()
-      if (st.compressOpen || promptOpen()) return
+      if (st.compressOpen || st.tool || promptOpen()) return
       const mod = e.metaKey || e.ctrlKey
       const k = e.key.toLowerCase()
 
