@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.4.0] - TBD
+## [1.4.0] - 2026-11-13
 
 ### Added
 - Fill and sign, in the Tools menu. Fill in PDF forms right on the page: text boxes, tick boxes, radio buttons and dropdowns. When exporting, you can lock the answers in, so they can't be changed.
