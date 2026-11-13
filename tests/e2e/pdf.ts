@@ -52,3 +52,24 @@ export function imageSize(b: Uint8Array): [number, number] {
   }
   throw new Error('not a JPEG or PNG')
 }
+
+/** Whether there is ink at each point of a page, as fractions from its top left as it appears. */
+export async function inkAt(bytes: Uint8Array, points: [number, number][], pageNumber = 1) {
+  const { createCanvas } = await import('@napi-rs/canvas')
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+  const doc = await pdfjs.getDocument({ data: bytes.slice(), isEvalSupported: false, verbosity: 0 }).promise
+  const page = await doc.getPage(pageNumber)
+  const vp = page.getViewport({ scale: 1.5 })
+  const canvas = createCanvas(Math.ceil(vp.width), Math.ceil(vp.height))
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  await page.render({ canvasContext: ctx as never, viewport: vp }).promise
+  await doc.destroy()
+  return points.map(([fx, fy]) => {
+    // A small patch around the point, so a thin stroke near it counts.
+    const d = ctx.getImageData(Math.floor(fx * canvas.width) - 3, Math.floor(fy * canvas.height) - 3, 7, 7).data
+    for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] < 300) return true
+    return false
+  })
+}

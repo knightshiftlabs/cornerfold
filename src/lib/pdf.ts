@@ -205,3 +205,59 @@ export async function pageText(source: Source, index: number) {
   const { textFromItems } = await import('./text')
   return textFromItems(content.items.filter((i): i is typeof i & { str: string; transform: number[] } => 'str' in i) as never)
 }
+
+/** A form field on a page, placed as fractions of the page as it appears (before any turn added in Cornerfold). */
+export interface FormField {
+  name: string
+  /** What the field is for, in words: the form's own description of it, or its name tidied up. */
+  label: string
+  kind: 'text' | 'checkbox' | 'radio' | 'choice'
+  x: number
+  y: number
+  w: number
+  h: number
+  /** Text, the chosen option, or whether a box is ticked. */
+  value: string | boolean
+  /** For a radio button, the option it stands for. */
+  option?: string
+  options?: { value: string; label: string }[]
+  multiline?: boolean
+  readOnly?: boolean
+}
+
+/** The form fields on one page, read by pdf.js. Pages without a form have none. */
+export async function pageFields(source: Source, index: number): Promise<FormField[]> {
+  if (source.kind !== 'pdf') return []
+  const doc = await docs.get(source.id)
+  if (!doc) return []
+  const page = await doc.getPage(index + 1)
+  const vp = page.getViewport({ scale: 1 }) // includes the page's own built-in turn, as marks do
+  const annotations = await page.getAnnotations({ intent: 'display' })
+  const found = annotations.flatMap((a): FormField[] => {
+    if (a.subtype !== 'Widget' || !a.fieldName || a.pushButton || a.hidden) return []
+    const [x1, y1, x2, y2] = vp.convertToViewportRectangle(a.rect)
+    const tidy = String(a.fieldName).split('.').pop()!.replace(/[_-]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim()
+    const label = String(a.alternativeText || tidy || a.fieldName)
+    const box = { name: a.fieldName as string, label, x: Math.min(x1, x2) / vp.width, y: Math.min(y1, y2) / vp.height, w: Math.abs(x2 - x1) / vp.width, h: Math.abs(y2 - y1) / vp.height, readOnly: !!a.readOnly }
+    if (a.fieldType === 'Tx') return [{ ...box, kind: 'text', value: String(a.fieldValue ?? ''), multiline: !!a.multiLine }]
+    if (a.fieldType === 'Btn' && a.checkBox) return [{ ...box, kind: 'checkbox', value: !!a.fieldValue && a.fieldValue !== 'Off' }]
+    if (a.fieldType === 'Btn' && a.radioButton) return [{ ...box, kind: 'radio', value: String(a.fieldValue ?? ''), option: String(a.buttonValue ?? '') }]
+    if (a.fieldType === 'Ch')
+      return [{ ...box, kind: 'choice', value: String((Array.isArray(a.fieldValue) ? a.fieldValue[0] : a.fieldValue) ?? ''), options: (a.options ?? []).map((o: { exportValue: string; displayValue: string }) => ({ value: o.exportValue, label: o.displayValue })) }]
+    return []
+  })
+  // Radio buttons say which of their group they are: "option 2 of 3".
+  for (const f of found.filter((f) => f.kind === 'radio')) {
+    const group = found.filter((g) => g.kind === 'radio' && g.name === f.name)
+    f.label = `${f.label}, option ${group.indexOf(f) + 1} of ${group.length}`
+  }
+  return found
+}
+
+/** A PDF page's size in points, as it appears before any turn added in Cornerfold. */
+export async function pdfPageSize(source: Source, index: number): Promise<[number, number]> {
+  const doc = await docs.get(source.id)
+  if (!doc) throw new Error('Document not loaded')
+  const vp = (await doc.getPage(index + 1)).getViewport({ scale: 1 })
+  return [vp.width, vp.height]
+}

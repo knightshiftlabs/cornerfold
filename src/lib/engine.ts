@@ -33,6 +33,19 @@ export function getWorker() {
   return worker
 }
 
+/**
+ * What a job needs beyond its pages: the paper for photos, the form answers for its files, and the signatures
+ * its pages use. Sent with every job, so a changed answer can never meet a copy made before the change.
+ */
+function recipeFor(pages: Page[]) {
+  const st = useStore.getState()
+  const files = new Set(pages.map((p) => p.sourceId))
+  const fields = Object.fromEntries(Object.entries(st.fieldValues).filter(([sid]) => files.has(sid)))
+  const used = new Set(pages.flatMap((p) => p.marks ?? []).flatMap((m) => (m.kind === 'image' ? [m.imageId] : [])))
+  const images = [...used].flatMap((id) => (st.markImages[id] ? [{ ...st.markImages[id], png: st.markImages[id].png.slice() }] : []))
+  return { paper: st.paper, ...(Object.keys(fields).length ? { fields } : {}), ...(st.lockAnswers ? { flatten: true } : {}), ...(images.length ? { images } : {}) }
+}
+
 export function runJob(op: 'merge' | 'split' | 'compress' | 'blank' | 'stamp', pages: Page[], name: string, options?: JobOptions): Promise<JobResult> {
   const w = getWorker()
   const { sources } = useStore.getState()
@@ -47,7 +60,7 @@ export function runJob(op: 'merge' | 'split' | 'compress' | 'blank' | 'stamp', p
     waiting.set(id, { resolve, reject })
     try {
       w.postMessage(
-        { id, op, name, options: { ...options, paper: useStore.getState().paper }, pages: pages.map(({ sourceId, index, rotation }) => ({ sourceId, index, rotation })), sources: payload },
+        { id, op, name, options: { ...options, ...recipeFor(pages) }, pages: pages.map(({ sourceId, index, rotation, marks }) => ({ sourceId, index, rotation, ...(marks?.length ? { marks } : {}) })), sources: payload },
         payload.map((s) => s.bytes.buffer),
       )
     } catch (e) {

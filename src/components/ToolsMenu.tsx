@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from 'react'
 import { createPortal } from 'react-dom'
 import { splitPages } from '../lib/actions'
-import { ArrowDownUp, CopyPlus, Droplets, FilePlus2, FileText, FlipVertical2, Hash, Images, ListChecks, Ruler, ScanSearch, Scissors, Shrink, SquareSplitHorizontal, Wrench } from 'lucide-react'
+import { ArrowDownUp, CopyPlus, Droplets, FilePlus2, FileText, FlipVertical2, Hash, Images, ListChecks, Ruler, ScanSearch, Scissors, Shrink, Signature, SquareSplitHorizontal, Wrench } from 'lucide-react'
 import { describePaper } from '../lib/paper'
 import { duplicateSelected, insertBlankPage, reverseOrder, selectBlankPages } from '../lib/pageTools'
 import { useStore } from '../lib/store'
@@ -36,6 +36,20 @@ export function ToolsMenu() {
       name: 'Make smaller',
       phoneOnly: true,
       items: [{ icon: Shrink, label: 'Compress…', disabled: busy, phoneOnly: true, run: () => useStore.getState().setCompressOpen(true) }],
+    },
+    {
+      name: 'Sign',
+      items: [
+        {
+          icon: Signature,
+          label: 'Fill and sign…',
+          hint: 'Forms, signatures, text and ticks',
+          run: () => {
+            const st = useStore.getState()
+            useStore.setState({ tool: 'sign', previewPage: st.pages.find((p) => st.selected.has(p.id))?.id ?? st.pages[0]?.id ?? null })
+          },
+        },
+      ],
     },
     {
       name: 'Select',

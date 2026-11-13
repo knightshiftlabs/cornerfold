@@ -106,3 +106,52 @@ test('the large preview fits the screen, with every control on it', async ({ pag
   const image = (await viewer.locator('img').boundingBox())!
   expect(image.x + image.width).toBeLessThanOrEqual(width)
 })
+
+test.describe('Fill and sign on a phone', () => {
+  test.beforeEach(async ({ app }) => {
+    await app.add('form.pdf')
+    await app.thumbnails(5)
+  })
+
+  test('fits the screen, with every tool and the Done button within reach', async ({ page }) => {
+    await page.getByRole('button', { name: 'Tools' }).tap()
+    const item = page.getByRole('menuitem', { name: /Fill and sign/ })
+    await item.scrollIntoViewIfNeeded()
+    await item.tap()
+    const editor = page.getByRole('dialog', { name: 'Fill and sign' })
+    await expect(editor.getByRole('img', { name: /^Page \d$/ })).toBeVisible({ timeout: 20_000 })
+    expect(await overflow(page)).toBeLessThanOrEqual(0)
+    const width = page.viewportSize()!.width
+    for (const name of ['Done', 'Text', 'Signature', 'Tick', 'Cross', 'Date', 'Next page']) {
+      const b = (await editor.getByRole('button', { name, exact: true }).boundingBox())!
+      expect(b.x, name).toBeGreaterThanOrEqual(0)
+      expect(b.x + b.width, name).toBeLessThanOrEqual(width)
+      expect(b.height, name).toBeGreaterThanOrEqual(36) // big enough for a finger
+    }
+    const pageBox = (await editor.getByRole('img', { name: /^Page \d$/ }).boundingBox())!
+    expect(pageBox.x + pageBox.width).toBeLessThanOrEqual(width)
+  })
+
+  test('the signature pad fits the screen, and a finger can draw on it', async ({ page }) => {
+    await page.getByRole('button', { name: 'Tools' }).tap()
+    const item = page.getByRole('menuitem', { name: /Fill and sign/ })
+    await item.scrollIntoViewIfNeeded()
+    await item.tap()
+    const editor = page.getByRole('dialog', { name: 'Fill and sign' })
+    await expect(editor.getByRole('img', { name: /^Page \d$/ })).toBeVisible({ timeout: 20_000 })
+    await editor.getByRole('button', { name: 'Signature', exact: true }).tap()
+    const pad = page.getByLabel('Draw your signature here')
+    const b = (await pad.boundingBox())!
+    expect(b.x).toBeGreaterThanOrEqual(0)
+    expect(b.x + b.width).toBeLessThanOrEqual(page.viewportSize()!.width)
+    // A finger stroke, as touch pointer events.
+    const cdp = await page.context().newCDPSession(page)
+    const touch = (type: string, x: number, y: number) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] })
+    await touch('touchStart', b.x + 20, b.y + b.height / 2)
+    for (let i = 1; i <= 12; i++) await touch('touchMove', b.x + 20 + i * 20, b.y + b.height / 2 + (i % 2 ? 15 : -15))
+    await touch('touchEnd', 0, 0)
+    await expect(page.getByRole('button', { name: 'Use this signature' })).toBeEnabled()
+    await page.getByRole('button', { name: 'Use this signature' }).tap()
+    await expect(editor.getByRole('button', { name: /^Signature\./ })).toBeVisible()
+  })
+})

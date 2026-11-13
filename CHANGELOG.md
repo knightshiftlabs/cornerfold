@@ -8,6 +8,22 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.4.0] - TBD
+
+### Added
+- Fill and sign, in the Tools menu. Fill in PDF forms right on the page: text boxes, tick boxes, radio buttons and dropdowns. When exporting, you can lock the answers in, so they can't be changed.
+- Sign with a signature you draw with your finger, a mouse or a pen, type in a handwriting style, or take from a photo of your signature on paper, with the paper made see-through. Place it, move it, resize it, and reuse it on other pages.
+- Add text, a tick, a cross or today's date anywhere: click where it should go, or, with the keyboard, add it and move it with the arrow keys.
+- Everything you add stays with its page, so it is kept when you reorder, rotate or split pages, and it appears in every export. Undo takes it back.
+
+### Notes
+- A signature added this way is a picture of your signature, not a digital signature with a certificate. That is fine for most everyday forms, but some documents need a certified signature, such as Aadhaar eSign or a digital signature certificate in India. Cornerfold says so where you make one.
+- Your signature is kept only in the open tab, and is gone when you close it. It is never saved or sent anywhere.
+- For now, typed text, form answers and typed signatures can use Latin letters, numbers and common symbols. To sign in another script, draw your signature or use a photo of it.
+
+### Fixed
+- Filled form answers now look right in every PDF viewer, and stay when the answers are locked in.
+
 ## [1.3.2] - 2026-11-13
 
 ### Added

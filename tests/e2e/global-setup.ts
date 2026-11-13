@@ -69,10 +69,34 @@ async function smallScanPdf() {
   return doc.save()
 }
 
+/** A form with every kind of field: text, a tick box, radio buttons and a dropdown. */
+async function formPdf() {
+  const doc = await PDFDocument.create()
+  const font = await doc.embedFont(StandardFonts.Helvetica)
+  const page = doc.addPage([595, 842])
+  const form = doc.getForm()
+  page.drawText('Application form', { x: 40, y: 790, size: 20, font })
+  page.drawText('Full name', { x: 40, y: 745, size: 11, font })
+  form.createTextField('applicant.name').addToPage(page, { x: 140, y: 738, width: 300, height: 22 })
+  page.drawText('I agree to the terms', { x: 70, y: 705, size: 11, font })
+  form.createCheckBox('agree').addToPage(page, { x: 40, y: 700, width: 18, height: 18 })
+  page.drawText('Plan:   Basic        Premium', { x: 40, y: 665, size: 11, font })
+  const plan = form.createRadioGroup('plan')
+  plan.addOptionToPage('basic', page, { x: 120, y: 662, width: 14, height: 14 })
+  plan.addOptionToPage('premium', page, { x: 190, y: 662, width: 14, height: 14 })
+  page.drawText('City', { x: 40, y: 625, size: 11, font })
+  const city = form.createDropdown('city')
+  city.addOptions(['Bengaluru', 'Delhi', 'Mumbai'])
+  city.addToPage(page, { x: 140, y: 618, width: 160, height: 22 })
+  page.drawText('Signature', { x: 40, y: 200, size: 11, font })
+  return doc.save()
+}
+
 export default async function globalSetup() {
   mkdirSync(FILES, { recursive: true })
   const write = (name: string, bytes: Uint8Array | Buffer) => writeFileSync(join(FILES, name), bytes)
   write('report.pdf', await reportPdf())
+  write('form.pdf', await formPdf())
   write('mixed-sizes.pdf', await mixedSizesPdf())
   write('scan.pdf', await scanPdf(3))
   write('scan-small.pdf', await smallScanPdf())

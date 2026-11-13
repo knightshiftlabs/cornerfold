@@ -1,8 +1,9 @@
 // The export engine, exactly as the app runs it: messages in, files out.
 import { beforeAll, describe, expect, it } from 'vitest'
-import { PDFDict, PDFDocument, PDFName } from '@cantoo/pdf-lib'
+import { PDFDict, PDFDocument, PDFName, PDFRawStream, decodePDFRawStream } from '@cantoo/pdf-lib'
 import { unzipSync } from 'fflate'
 import { installBrowserImageApis } from './helpers/canvas'
+import { createCanvas } from '@napi-rs/canvas'
 import { photoJpeg } from './helpers/fixtures'
 import { annotatedPdf, bookmarkedPdf, formPdf, inheritedRotationPdf, manyPagesPdf, mixedSizesPdf, photosPdf, scanPdf, textPdf } from './helpers/fixtures'
 
@@ -473,5 +474,218 @@ describe('page numbers and watermarks', () => {
     const [p] = await seen(await job('stamp', pages(photo), [photo], { paper: { size: 'a4', margin: 'small', orientation: 'portrait' }, stamps: { numbers: { ...NUMBERS, format: 'n' } } }))
     expect(Math.round(p.w)).toBe(595)
     expect(label(p, '1')).toBeDefined()
+  })
+})
+
+describe('Fill and sign: marks on pages', () => {
+  const pdfjs = () => import('pdfjs-dist/legacy/build/pdf.mjs')
+  /** Each page's text as it appears: position from the top left of the page as shown, and angle (0 is upright). */
+  async function seenItems(m: Msg) {
+    const lib = await pdfjs()
+    const doc = await lib.getDocument({ data: m.files![0].bytes.slice(), isEvalSupported: false, verbosity: 0 }).promise
+    const out = []
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i)
+      const vp = page.getViewport({ scale: 1 })
+      const items = (await page.getTextContent()).items.flatMap((it) => {
+        if (!('str' in it) || !it.str.trim()) return []
+        const t = lib.Util.transform(vp.transform, it.transform)
+        return [{ str: it.str, x: t[4], y: t[5], angle: Math.round((Math.atan2(t[1], t[0]) * 180) / Math.PI) }]
+      })
+      out.push({ w: vp.width, h: vp.height, items })
+    }
+    await doc.destroy()
+    return out
+  }
+  /** The first page drawn to pixels, as it appears. `dark(fx, fy)` says whether there is ink at that point. */
+  async function rendered(m: Msg) {
+    const lib = await pdfjs()
+    const doc = await lib.getDocument({ data: m.files![0].bytes.slice(), isEvalSupported: false, verbosity: 0 }).promise
+    const page = await doc.getPage(1)
+    const vp = page.getViewport({ scale: 1 })
+    const canvas = createCanvas(Math.ceil(vp.width), Math.ceil(vp.height))
+    const ctx = canvas.getContext('2d')
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    await page.render({ canvasContext: ctx as never, viewport: vp }).promise
+    const px = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+    await doc.destroy()
+    return {
+      w: canvas.width,
+      h: canvas.height,
+      dark: (fx: number, fy: number) => {
+        const i = (Math.floor(fy * canvas.height) * canvas.width + Math.floor(fx * canvas.width)) * 4
+        return px[i] + px[i + 1] + px[i + 2] < 200
+      },
+    }
+  }
+  const blank = async (size: [number, number] = [595, 842]) => {
+    const d = await PDFDocument.create()
+    d.addPage(size)
+    return pdf(await d.save(), 1)
+  }
+  const blackSquare = async () => ({ id: 'sig-1', png: new Uint8Array(await (() => { const c = createCanvas(40, 20); const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, 40, 20); return c.encode('png') })()), width: 40, height: 20 })
+  const withMarks = (s: Src, marks: object[], rotation = 0) => [{ ...pages(s, [0], rotation)[0], marks }]
+
+  it('puts text where it was placed, upright, measured from the top left', async () => {
+    const s = await blank()
+    const [p] = await seenItems(await job('merge', withMarks(s, [{ id: 't', kind: 'text', x: 0.1, y: 0.1, text: 'Asha Rao', size: 12 }]), [s]))
+    const t = p.items.find((i) => i.str === 'Asha Rao')!
+    expect(t.angle).toBe(0)
+    expect(t.x).toBeCloseTo(0.1 * p.w, 0)
+    expect(t.y).toBeCloseTo(0.1 * p.h + 0.8 * 12, 0) // the baseline, just below the top of the text
+  })
+
+  it('writes several lines, each lower than the last', async () => {
+    const s = await blank()
+    const [p] = await seenItems(await job('merge', withMarks(s, [{ id: 't', kind: 'text', x: 0.1, y: 0.1, text: 'Line one\nLine two', size: 10 }]), [s]))
+    const [a, b] = ['Line one', 'Line two'].map((str) => p.items.find((i) => i.str === str)!)
+    expect(b.y - a.y).toBeCloseTo(12.5, 0)
+    expect(b.x).toBeCloseTo(a.x, 0)
+  })
+
+  it('on a page with its own built-in turn, text sits where it was placed as seen, upright', async () => {
+    const s = pdf(await inheritedRotationPdf(), 2)
+    const [p] = await seenItems(await job('merge', withMarks(s, [{ id: 't', kind: 'text', x: 0.5, y: 0.05, text: 'Signed', size: 12 }]), [s]))
+    const t = p.items.find((i) => i.str === 'Signed')!
+    expect(t.angle).toBe(0)
+    expect(t.x / p.w).toBeCloseTo(0.5, 2)
+    expect(t.y / p.h).toBeLessThan(0.1)
+  })
+
+  it('a page turned in Cornerfold afterwards turns its marks with it, like ink on paper', async () => {
+    const s = await blank()
+    const [p] = await seenItems(await job('merge', withMarks(s, [{ id: 't', kind: 'text', x: 0.1, y: 0.1, text: 'Asha Rao', size: 12 }], 90), [s]))
+    const t = p.items.find((i) => i.str === 'Asha Rao')!
+    expect(t.angle).toBe(90) // turned a quarter clockwise with the page
+    expect(t.x / p.w).toBeGreaterThan(0.8) // the top left corner of the page is now its top right
+    expect(t.y / p.h).toBeLessThan(0.2)
+  })
+
+  it('draws a signature exactly over the box it was placed in, and nowhere else', async () => {
+    const s = await blank()
+    const img = await blackSquare()
+    const r = await rendered(await job('merge', withMarks(s, [{ id: 'i', kind: 'image', x: 0.5, y: 0.6, w: 0.3, h: 0.1, imageId: 'sig-1' }]), [s], { images: [img] }))
+    expect(r.dark(0.65, 0.65)).toBe(true) // the middle of the box
+    expect(r.dark(0.51, 0.61)).toBe(true) // just inside its top left corner
+    expect(r.dark(0.79, 0.69)).toBe(true) // just inside its bottom right corner
+    expect(r.dark(0.48, 0.65)).toBe(false) // just outside, left
+    expect(r.dark(0.65, 0.72)).toBe(false) // just outside, below
+    expect(r.dark(0.2, 0.2)).toBe(false)
+  })
+
+  it('a signature on a page with its own built-in turn lands where it was placed as seen', async () => {
+    const s = pdf(await inheritedRotationPdf(), 2)
+    const r = await rendered(await job('merge', withMarks(s, [{ id: 'i', kind: 'image', x: 0.1, y: 0.1, w: 0.2, h: 0.1, imageId: 'sig-1' }]), [s], { images: [await blackSquare()] }))
+    expect(r.dark(0.2, 0.15)).toBe(true)
+    expect(r.dark(0.8, 0.85)).toBe(false)
+  })
+
+  it('draws a tick and a cross as lines, with no font needed', async () => {
+    const s = await blank()
+    const r = await rendered(await job('merge', withMarks(s, [{ id: 'a', kind: 'tick', x: 0.2, y: 0.2, size: 40 }, { id: 'b', kind: 'cross', x: 0.6, y: 0.6, size: 40 }]), [s]))
+    // The tick's lowest point, and the middle of the cross, where its two strokes meet.
+    expect(r.dark(0.2 + (0.4 * 40) / 595, 0.2 + (0.85 * 40) / 842 - 0.003)).toBe(true)
+    expect(r.dark(0.6 + 20 / 595, 0.6 + 20 / 842)).toBe(true)
+    expect(r.dark(0.4, 0.4)).toBe(false)
+  })
+
+  it('says plainly when a signature a page uses is missing, instead of making a broken file', async () => {
+    const s = await blank()
+    await expect(job('merge', withMarks(s, [{ id: 'i', kind: 'image', x: 0, y: 0, w: 0.1, h: 0.1, imageId: 'never-sent' }]), [s])).rejects.toThrow(/signature .* missing/i)
+  })
+
+  it('compressing keeps the marks, even for a file that would otherwise be compressed untouched', async () => {
+    const s = pdf(await textPdf(1), 1)
+    const plain = await job('compress', pages(s), [s], { preset: 'balanced' })
+    const marked = await job('compress', withMarks(s, [{ id: 't', kind: 'text', x: 0.1, y: 0.9, text: 'Approved', size: 14 }]), [s], { preset: 'balanced' })
+    expect((await seenItems(plain))[0].items.some((i) => i.str === 'Approved')).toBe(false)
+    expect((await seenItems(marked))[0].items.some((i) => i.str === 'Approved')).toBe(true) // not a stale copy of the first
+  })
+})
+
+describe('Fill and sign: form answers', () => {
+  /** A form with every kind of field. */
+  async function fullForm() {
+    const d = await PDFDocument.create()
+    const p = d.addPage([595, 842])
+    const form = d.getForm()
+    form.createTextField('applicant.name').addToPage(p, { x: 40, y: 760, width: 300, height: 24 })
+    form.createCheckBox('agree').addToPage(p, { x: 40, y: 720, width: 18, height: 18 })
+    const radio = form.createRadioGroup('plan')
+    radio.addOptionToPage('basic', p, { x: 40, y: 680, width: 16, height: 16 })
+    radio.addOptionToPage('premium', p, { x: 80, y: 680, width: 16, height: 16 })
+    const city = form.createDropdown('city')
+    city.addOptions(['Bengaluru', 'Delhi', 'Mumbai'])
+    city.addToPage(p, { x: 40, y: 630, width: 160, height: 24 })
+    return pdf(await d.save(), 1)
+  }
+  const answers = { 'applicant.name': 'Asha Rao', agree: true, plan: 'premium', city: 'Delhi' }
+
+  it('fills every kind of field, and the answers stay editable', async () => {
+    const s = await fullForm()
+    const form = (await load(await job('merge', pages(s), [s], { fields: { [s.id]: answers } }))).getForm()
+    expect(form.getTextField('applicant.name').getText()).toBe('Asha Rao')
+    expect(form.getCheckBox('agree').isChecked()).toBe(true)
+    expect(form.getRadioGroup('plan').getSelected()).toBe('premium')
+    expect(form.getDropdown('city').getSelected()).toEqual(['Delhi'])
+  })
+
+  it('locking the answers turns them into page content: the form is gone, the answers are not', async () => {
+    const s = await fullForm()
+    const m = await job('merge', pages(s), [s], { fields: { [s.id]: answers }, flatten: true })
+    expect((await load(m)).getForm().getFields()).toHaveLength(0)
+    const lib = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const doc = await lib.getDocument({ data: m.files![0].bytes.slice(), isEvalSupported: false, verbosity: 0 }).promise
+    const text = (await (await doc.getPage(1)).getTextContent()).items.map((i) => ('str' in i ? i.str : '')).join(' ')
+    await doc.destroy()
+    expect(text).toContain('Asha Rao')
+    expect(text).toContain('Delhi')
+  })
+
+  it('what a viewer shows is the new answer, not the old one (regression: a filled copy kept its old look)', async () => {
+    const s = pdf(await formPdf(), 1)
+    const form = (await load(await job('merge', pages(s), [s], { fields: { [s.id]: { name: 'Asha Rao' } } }))).getForm()
+    const widget = form.getTextField('name').acroField.getWidgets()[0]
+    const shown = widget.dict.lookup(PDFName.of('AP'), PDFDict).lookup(PDFName.of('N')) as PDFRawStream
+    // Text in an appearance is written either as (letters) or as <hex codes>; read both.
+    const raw = new TextDecoder('latin1').decode(decodePDFRawStream(shown).decode())
+    const drawn = raw.replace(/<([0-9A-Fa-f]+)>/g, (_, hex: string) => Buffer.from(hex, 'hex').toString('latin1'))
+    expect(drawn).toContain('Asha Rao')
+    expect(drawn).not.toContain('Original value')
+  })
+
+  it('unticks a box, and leaves fields that weren’t answered as they were', async () => {
+    const s = pdf(await formPdf(), 1)
+    const form = (await load(await job('merge', pages(s), [s], { fields: { [s.id]: { agree: false } } }))).getForm()
+    expect(form.getCheckBox('agree').isChecked()).toBe(false)
+    expect(form.getTextField('name').getText()).toBe('Original value')
+  })
+
+  it('answers change only the copy being exported: the next export without them is unchanged', async () => {
+    const s = pdf(await formPdf(), 1)
+    await job('merge', pages(s), [s], { fields: { [s.id]: { name: 'Changed' } } })
+    const form = (await load(await job('merge', pages(s), [s]))).getForm()
+    expect(form.getTextField('name').getText()).toBe('Original value')
+  })
+
+  it('a changed answer is never served from an earlier compression of the same pages', async () => {
+    const s = pdf(await formPdf(), 1)
+    const first = await job('compress', pages(s), [s], { preset: 'light', fields: { [s.id]: { name: 'First' } } })
+    const second = await job('compress', pages(s), [s], { preset: 'light', fields: { [s.id]: { name: 'Second' } } })
+    expect((await load(first)).getForm().getTextField('name').getText()).toBe('First')
+    expect((await load(second)).getForm().getTextField('name').getText()).toBe('Second')
+  })
+
+  it('a radio option can be chosen by its position too, as pdf.js reports it for some forms', async () => {
+    const s = await fullForm()
+    const form = (await load(await job('merge', pages(s), [s], { fields: { [s.id]: { plan: '1' } } }))).getForm()
+    expect(form.getRadioGroup('plan').getSelected()).toBe('premium')
+  })
+
+  it('ignores answers for fields the file doesn’t have', async () => {
+    const s = pdf(await formPdf(), 1)
+    const m = await job('merge', pages(s), [s], { fields: { [s.id]: { 'no such field': 'x' } } })
+    expect(m.ok).toBe(true)
   })
 })

@@ -35,6 +35,11 @@
   <p><strong>How it’s tested.</strong> After opening a protected file, a browser test searches everywhere a website can store things (its storage, cookies, caches and the page itself) and fails if the password is found anywhere.</p>
   <p><strong>Check it yourself.</strong> Open a protected file, then look under your browser’s Application or Storage tab in the developer tools.</p>
 
+  <h2>Signatures are never kept</h2>
+  <p><strong>How it’s kept.</strong> A signature you make, drawn, typed or from a photo, stays in the open tab only. It is added to the pages you export and forgotten when you close the tab.</p>
+  <p><strong>How it’s tested.</strong> After making and using a signature, a browser test searches everywhere a website can store things and fails if anything was saved.</p>
+  <p><strong>Check it yourself.</strong> Sign something, then look under your browser’s Application or Storage tab in the developer tools: nothing has been stored.</p>
+
   <h2>No accounts and no cookies</h2>
   <p><strong>How it’s kept.</strong> There is nothing to sign in to, and Cornerfold sets no cookies.</p>
   <p><strong>How it’s tested.</strong> A browser test fails if the site sets any cookie.</p>

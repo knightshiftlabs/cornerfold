@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { arrayMove } from '@dnd-kit/sortable'
 import { DEFAULT_PAPER, type Paper } from './paper'
+import type { FieldValue, Mark, MarkImage } from './marks'
 
 /** One page on the desk. `rotation` is cumulative degrees so animations never spin backwards. */
 export interface Page {
@@ -8,6 +9,8 @@ export interface Page {
   sourceId: string
   index: number
   rotation: number
+  /** Fill and sign: text, signatures, ticks and crosses added to this page. */
+  marks?: Mark[]
 }
 
 /** A file the user added. Bytes live only in memory, in this tab. */
@@ -23,7 +26,7 @@ export interface Source {
 }
 
 /** The tools that open a panel of their own. */
-export type Tool = 'select' | 'split' | 'paper' | 'preview' | 'images' | 'text' | 'numbers' | 'watermark'
+export type Tool = 'select' | 'split' | 'paper' | 'preview' | 'images' | 'text' | 'numbers' | 'watermark' | 'sign'
 
 export const newId = () => crypto.randomUUID()
 
@@ -54,6 +57,17 @@ interface State {
   /** How photos become pages when exporting. */
   paper: Paper
   setPaper: (paper: Paper) => void
+  /** Fill and sign: form answers, by file and then by the field's full name. Kept only in this tab. */
+  fieldValues: Record<string, Record<string, FieldValue>>
+  setField: (sourceId: string, name: string, value: FieldValue) => void
+  /** Fill and sign: signatures and other pictures used by marks. Kept only in this tab. */
+  markImages: Record<string, MarkImage>
+  addMarkImage: (image: MarkImage) => void
+  /** Fill and sign: turn form answers into plain page content when exporting. */
+  lockAnswers: boolean
+  setLockAnswers: (lock: boolean) => void
+  /** Replaces one page's marks, as one undoable step. */
+  setMarks: (pageId: string, marks: Mark[]) => void
 
   addPages: (sources: Source[], pages: Page[]) => void
   /** Adds pages right after the given page, or at the end. */
@@ -132,6 +146,13 @@ export const useStore = create<State>((set, get) => {
     openPreview: (pageId) => set({ tool: 'preview', previewPage: pageId }),
     paper: DEFAULT_PAPER,
     setPaper: (paper) => set({ paper }),
+    fieldValues: {},
+    setField: (sourceId, name, value) => set((s) => ({ fieldValues: { ...s.fieldValues, [sourceId]: { ...s.fieldValues[sourceId], [name]: value } } })),
+    markImages: {},
+    addMarkImage: (image) => set((s) => ({ markImages: { ...s.markImages, [image.id]: image } })),
+    lockAnswers: false,
+    setLockAnswers: (lockAnswers) => set({ lockAnswers }),
+    setMarks: (pageId, marks) => commit(get().pages.map((p) => (p.id === pageId ? { ...p, marks } : p))),
 
     addPages: (sources, pages) => {
       set((s) => ({ sources: { ...s.sources, ...Object.fromEntries(sources.map((x) => [x.id, x])) } }))

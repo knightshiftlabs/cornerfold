@@ -68,6 +68,7 @@ that installs with the other packages.
 | `export.spec.ts` | Exports, splitting, compression (the size shown is the size delivered), fitting under a limit, metadata removed |
 | `unlock.spec.ts` | Locked and restricted PDFs, wrong passwords, and that the password is left nowhere in the browser |
 | `tools.spec.ts` | Each tool in the Tools menu through its real panel, with every file it makes checked |
+| `sign.spec.ts` | Fill and sign: every kind of form field, locked answers, text placed by clicking or by keyboard, drawn and typed signatures, ticks and crosses, refused characters, undo, and that a signature is stored nowhere. Placement is checked by drawing the exported page |
 | `phone.spec.ts` | Screens from 320 pixels wide: nothing wider than the screen, labels on one line, every tool reachable |
 
 Two things make these tests worth more than clicking around:

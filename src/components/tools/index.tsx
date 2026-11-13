@@ -10,6 +10,7 @@ import { useStore } from '../../lib/store'
 import { Button, Sheet } from '../ui'
 import { Choices, Field, TextInput } from './parts'
 import Preview from './Preview'
+import FillSign from './FillSign'
 
 export default function Tools() {
   const tool = useStore((s) => s.tool)
@@ -17,6 +18,7 @@ export default function Tools() {
   if (tool === 'split') return <SplitPanel />
   if (tool === 'paper') return <PaperPanel />
   if (tool === 'preview') return <Preview />
+  if (tool === 'sign') return <FillSign />
   if (tool === 'images') return <ImagesPanel />
   if (tool === 'text') return <TextPanel />
   if (tool === 'numbers') return <NumbersPanel />

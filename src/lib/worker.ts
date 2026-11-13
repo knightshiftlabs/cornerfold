@@ -3,7 +3,9 @@
 import { unlockPdf } from './unlock'
 import { DEFAULT_PAPER, placeImage, type Paper } from './paper'
 import { applyStamps, type Stamps } from './stamp'
-import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFObjectCopier, PDFRef, PDFString, degrees, type PDFImage, type PDFPage } from '@cantoo/pdf-lib'
+import { drawMarks, markContext } from './markDraw'
+import type { FieldValue, Mark, MarkImage } from './marks'
+import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFObjectCopier, PDFRef, PDFString, degrees, type PDFImage, type PDFPage, PDFTextField, PDFCheckBox, PDFRadioGroup, PDFDropdown, PDFOptionList } from '@cantoo/pdf-lib'
 import { zipSync } from 'fflate'
 import { Compressor, PRESETS, budgetsFor, type Codec } from './compress'
 
@@ -20,7 +22,22 @@ interface JobPage {
   sourceId: string
   index: number
   rotation: number
+  /** Fill and sign: text, signatures, ticks and crosses on this page. */
+  marks?: Mark[]
 }
+
+/** Everything that shapes a document beyond its pages: the paper for photos, and form answers. */
+interface Recipe {
+  paper: Paper
+  /** Form answers, by file, then by the field's full name. */
+  fields?: Record<string, Record<string, FieldValue>>
+  /** Turn form fields into plain page content, so answers can't be changed. */
+  flatten?: boolean
+}
+const PLAIN: Recipe = { paper: DEFAULT_PAPER }
+
+/** Pictures used by marks, such as signatures, sent with each job that needs them. */
+const markImages = new Map<string, MarkImage>()
 
 const sources = new Map<string, WorkerSource>()
 const parsed = new Map<string, Promise<PDFDocument>>()
@@ -37,12 +54,46 @@ function loadSource(id: string) {
   return doc
 }
 
-async function build(pages: JobPage[], paper: Paper = DEFAULT_PAPER) {
-  return (await assemble(pages, paper)).save()
+async function build(pages: JobPage[], recipe: Recipe = PLAIN) {
+  return (await assemble(pages, recipe)).save()
 }
 
 /** The pages in order, as a document that can still be drawn on before it is saved. */
-async function assemble(pages: JobPage[], paper: Paper) {
+/**
+ * A file's document, with its form answers filled in when there are any. Filling changes the document, so it
+ * is done on a fresh copy, never on the one kept for later jobs.
+ */
+async function sourceFor(id: string, recipe: Recipe) {
+  const answers = recipe.fields?.[id]
+  if (!answers || !Object.keys(answers).length) return loadSource(id)
+  const s = sources.get(id)
+  if (!s) throw new Error('Source missing in worker')
+  const doc = await PDFDocument.load(s.bytes, { updateMetadata: false })
+  fillForm(doc, answers)
+  return doc
+}
+
+/** Sets each answered field. Answers for fields the file doesn't have are ignored. */
+function fillForm(doc: PDFDocument, answers: Record<string, FieldValue>) {
+  const form = doc.getForm()
+  for (const field of form.getFields()) {
+    const value = answers[field.getName()]
+    if (value === undefined) continue
+    if (field instanceof PDFTextField) field.setText(String(value))
+    else if (field instanceof PDFCheckBox) (value === true ? field.check() : field.uncheck())
+    else if ((field instanceof PDFRadioGroup || field instanceof PDFDropdown || field instanceof PDFOptionList) && typeof value === 'string' && value) {
+      // Some PDFs name each radio option; others store options by position, and pdf.js then reports "0", "1".
+      const options = field.getOptions()
+      const chosen = options.includes(value) ? value : /^\d+$/.test(value) ? options[Number(value)] : undefined
+      if (chosen !== undefined) field.select(chosen)
+    }
+  }
+  // Redraw what each field shows now. The library otherwise does this only when a document is saved, and this
+  // one never is: its pages are copied, so they would carry the old look, and locking would bake that in.
+  form.updateFieldAppearances()
+}
+
+async function assemble(pages: JobPage[], recipe: Recipe) {
   // No producer/creator stamps, and source metadata (author, etc.) is not carried over.
   const out = await PDFDocument.create({ updateMetadata: false })
 
@@ -55,7 +106,7 @@ async function assemble(pages: JobPage[], paper: Paper) {
   }
   const copies = new Map<string, PDFPage[]>()
   for (const [sid, indices] of wanted) {
-    const copied = await out.copyPages(await loadSource(sid), indices)
+    const copied = await out.copyPages(await sourceFor(sid, recipe), indices)
     indices.forEach((ix, i) => {
       const k = `${sid}:${ix}`
       if (!copies.has(k)) copies.set(k, [])
@@ -64,6 +115,12 @@ async function assemble(pages: JobPage[], paper: Paper) {
   }
 
   const images = new Map<string, PDFImage>()
+  let marking: ReturnType<typeof markContext> | undefined
+  const ctx = async () => {
+    marking ??= markContext(out, markImages)
+    await marking.ready
+    return marking
+  }
   for (const p of pages) {
     const s = sources.get(p.sourceId)!
     let page: PDFPage
@@ -76,13 +133,16 @@ async function assemble(pages: JobPage[], paper: Paper) {
         images.set(s.id, img)
       }
       // 96 dpi pixels to PDF points, then onto the paper chosen for photos
-      const { page: size, box } = placeImage(s.width! * 0.75, s.height! * 0.75, paper)
+      const { page: size, box } = placeImage(s.width! * 0.75, s.height! * 0.75, recipe.paper)
       page = out.addPage(size)
       page.drawImage(img, box)
     }
+    // Marks go on before Cornerfold's own turn, so they turn with the page's content.
+    if (p.marks?.length) await drawMarks(page, p.marks, await ctx())
     if (normalize(p.rotation)) page.setRotation(degrees(normalize(page.getRotation().angle + p.rotation)))
   }
   await rebuildForm(out, [...wanted.keys()])
+  if (recipe.flatten) out.getForm().flatten()
   return out
 }
 
@@ -116,13 +176,13 @@ async function blankPage(like: JobPage | undefined) {
  * which keeps every part under the limit without building each one twice. A page that is over the limit
  * by itself gets a part of its own.
  */
-async function packBySize(pages: JobPage[], maxBytes: number, paper: Paper) {
+async function packBySize(pages: JobPage[], maxBytes: number, recipe: Recipe) {
   const groups: number[][] = []
   let current: number[] = []
   let size = 0
   let oversize = 0
   for (let i = 0; i < pages.length; i++) {
-    const alone = (await build([pages[i]], paper)).length
+    const alone = (await build([pages[i]], recipe)).length
     if (alone > maxBytes) oversize++
     if (current.length && size + alone > maxBytes) {
       groups.push(current)
@@ -233,8 +293,8 @@ function endSession() {
   old?.compressor.then((c) => c.dispose(), () => {})
 }
 
-function compressorFor(pages: JobPage[], paper: Paper) {
-  const key = JSON.stringify([pages, paper])
+function compressorFor(pages: JobPage[], recipe: Recipe) {
+  const key = JSON.stringify([pages, recipe, [...new Set(pages.flatMap((p) => p.marks ?? []).flatMap((m) => (m.kind === 'image' ? [m.imageId] : [])))]])
   if (session?.key !== key) {
     endSession()
     const compressor = (async () => {
@@ -243,8 +303,10 @@ function compressorFor(pages: JobPage[], paper: Paper) {
         const untouched =
           first?.kind === 'pdf' &&
           pages.length === first.pageCount &&
-          pages.every((p, i) => p.sourceId === first.id && p.index === i && normalize(p.rotation) === 0)
-        const base = untouched ? first.bytes : await build(pages, paper)
+          pages.every((p, i) => p.sourceId === first.id && p.index === i && normalize(p.rotation) === 0 && !p.marks?.length) &&
+          !recipe.flatten &&
+          !Object.keys(recipe.fields?.[first.id] ?? {}).length
+        const base = untouched ? first.bytes : await build(pages, recipe)
         const c = new Compressor(base, browserCodec, budgetsFor((navigator as { deviceMemory?: number }).deviceMemory))
         await c.init()
         return c
@@ -284,9 +346,10 @@ self.onmessage = async (e: MessageEvent) => {
     name: string
     pages: JobPage[]
     sources: WorkerSource[]
-    options?: { preset?: keyof typeof PRESETS; target?: number; groups?: number[][]; maxBytes?: number; paper?: Paper; stamps?: Stamps }
+    options?: { preset?: keyof typeof PRESETS; target?: number; groups?: number[][]; maxBytes?: number; paper?: Paper; stamps?: Stamps; fields?: Recipe['fields']; flatten?: boolean; images?: MarkImage[] }
   }
-  const paper = options?.paper ?? DEFAULT_PAPER
+  const recipe: Recipe = { paper: options?.paper ?? DEFAULT_PAPER, fields: options?.fields, flatten: options?.flatten }
+  for (const img of options?.images ?? []) markImages.set(img.id, img)
   for (const s of incoming) sources.set(s.id, s)
   try {
     let files: { name: string; bytes: Uint8Array }[]
@@ -295,11 +358,11 @@ self.onmessage = async (e: MessageEvent) => {
     if (op === 'blank') {
       files = [{ name, bytes: await blankPage(pages[0]) }]
     } else if (op === 'stamp') {
-      const doc = await assemble(pages, paper)
+      const doc = await assemble(pages, recipe)
       await applyStamps(doc, options?.stamps ?? {})
       files = [{ name, bytes: await doc.save() }]
     } else if (op === 'compress') {
-      const c = await compressorFor(pages, paper)
+      const c = await compressorFor(pages, recipe)
       let bytes: Uint8Array
       let met = true
       if (options?.target) ({ bytes, met } = await c.fitUnder(options.target))
@@ -309,18 +372,18 @@ self.onmessage = async (e: MessageEvent) => {
       files = [{ name, bytes }]
       stats = { original: c.source.length, size: bytes.length, met }
     } else if (op === 'merge') {
-      files = [{ name, bytes: await build(pages, paper) }]
+      files = [{ name, bytes: await build(pages, recipe) }]
     } else {
       // One PDF per page by default; or one per group of pages; or as many pages per part as fit under a size.
       let groups = options?.groups ?? pages.map((_, i) => [i])
       let oversize = 0
-      if (options?.maxBytes) ({ groups, oversize } = await packBySize(pages, options.maxBytes, paper))
+      if (options?.maxBytes) ({ groups, oversize } = await packBySize(pages, options.maxBytes, recipe))
       const single = groups.every((g) => g.length === 1)
       const width = Math.max(2, String(groups.length).length)
       const entries: Record<string, Uint8Array> = {}
       for (let i = 0; i < groups.length; i++) {
         const label = `${single ? 'p' : 'part-'}${String(i + 1).padStart(width, '0')}`
-        entries[`${name}-${label}.pdf`] = await build(groups[i].map((ix) => pages[ix]), paper)
+        entries[`${name}-${label}.pdf`] = await build(groups[i].map((ix) => pages[ix]), recipe)
       }
       // PDFs are already compressed; store them as-is for speed.
       files = [{ name: `${name}-${single ? 'pages' : 'parts'}.zip`, bytes: zipSync(entries, { level: 0 }) }]
