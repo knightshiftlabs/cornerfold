@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.3.1] - TBD
+## [1.3.1] - 2026-11-13
 
 ### Fixed
 - Save as images failed on cornerfold.org: the site's own security settings, which block a page from fetching data, stopped one step of it. It now works. Found by new tests that run Cornerfold in a real browser under the site's real security settings.
