@@ -11,6 +11,37 @@
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  # Cloudflare Pages lets any website read our files by default. Nothing here needs that, so it is removed.
+  ! Access-Control-Allow-Origin
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Pages, not files: "no-transform" stops Cloudflare (or anything else in between) from rewriting them, such as
+# adding its own scripts, which Cloudflare's Web Analytics does when switched on. It also turns off compression,
+# which is why it is only on the pages, small as they are, and not on the scripts and styles. Every page must be
+# listed: tests/static.test.ts checks.
+/
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/about
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/about.html
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/changes
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/changes.html
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/privacy
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/privacy.html
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/terms
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/terms.html
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/verify
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
+/verify.html
+  Cache-Control: public, max-age=0, must-revalidate, no-transform

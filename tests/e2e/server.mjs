@@ -31,6 +31,7 @@ export function parseHeaders(text) {
   for (const line of text.split('\n')) {
     if (!line.trim() || line.trim().startsWith('#')) continue
     if (!/^\s/.test(line)) rules.push({ pattern: line.trim(), headers: [] })
+    else if (line.trim().startsWith('!')) rules.at(-1)?.headers.push([line.trim(), ''])
     else {
       const at = line.indexOf(':')
       rules.at(-1)?.headers.push([line.slice(0, at).trim(), line.slice(at + 1).trim()])
@@ -42,6 +43,28 @@ export function parseHeaders(text) {
 const matches = (pattern, path) => (pattern.endsWith('*') ? path.startsWith(pattern.slice(0, -1)) : path === pattern)
 
 /**
+ * The headers for a request, as Cloudflare Pages works them out: every rule whose pattern matches the path
+ * as requested (so "/" rather than "/index.html") applies, and a header set by more than one rule gets all
+ * their values, joined with commas. "! Name" removes a header set by an earlier rule.
+ */
+/** Header names that a "! Name" line removes for this path: the host must not send them either. */
+export function removedFor(rules, path) {
+  return rules.filter((r) => matches(r.pattern, path)).flatMap((r) => r.headers.filter(([n]) => n.startsWith('!')).map(([n]) => n.slice(1).trim().toLowerCase()))
+}
+
+export function headersFor(rules, path) {
+  const headers = {}
+  for (const rule of rules) {
+    if (!matches(rule.pattern, path)) continue
+    for (const [name, value] of rule.headers) {
+      if (name.startsWith('!')) delete headers[name.slice(1).trim().toLowerCase()]
+      else headers[name.toLowerCase()] = headers[name.toLowerCase()] ? `${headers[name.toLowerCase()]}, ${value}` : value
+    }
+  }
+  return headers
+}
+
+/**
  * Starts a server for a built copy of the site. `hidden` holds paths that answer 404 as if they had been
  * removed, which is what happens to old hashed files when a new version is deployed.
  */
@@ -49,10 +72,9 @@ export function startServer({ root = 'dist', port = 0, headersFile = 'public/_he
   const base = resolve(root)
   const rules = parseHeaders(readFileSync(headersFile, 'utf8'))
   const server = createServer(async (req, res) => {
-    let path = decodeURIComponent(new URL(req.url, 'http://local').pathname)
-    if (path.endsWith('/')) path += 'index.html'
-    const headers = {}
-    for (const rule of rules) if (matches(rule.pattern, path)) for (const [name, value] of rule.headers) headers[name] = value
+    const requested = decodeURIComponent(new URL(req.url, 'http://local').pathname)
+    const headers = headersFor(rules, requested)
+    const path = requested.endsWith('/') ? `${requested}index.html` : requested
     // Cloudflare Pages serves /privacy from privacy.html ("pretty URLs").
     const candidates = extname(path) ? [path] : [path, `${path}.html`]
     for (const candidate of candidates) {

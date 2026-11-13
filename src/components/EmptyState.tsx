@@ -49,6 +49,9 @@ export function EmptyState() {
         <a href="/about.html" className="hover:text-fg">
           About
         </a>
+        <a href="/verify.html" className="hover:text-fg">
+          Check our claims
+        </a>
         <a href="/terms.html" className="hover:text-fg">
           Terms
         </a>

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss" source("../src");
 
 /* Palette: a cool light-table desk, white paper, ultramarine ink, highlighter yellow for selection. */
 :root {

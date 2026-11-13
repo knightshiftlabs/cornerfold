@@ -71,6 +71,7 @@ const html = `<!doctype html>
     <a href="/about.html">About</a>
     <a href="/changes.html">What’s new</a>
     <a href="/privacy.html">Privacy</a>
+    <a href="/verify.html">Check our claims</a>
     <a href="/terms.html">Terms</a>
     <a href="/licenses.txt">Open-source licenses</a>
   </footer>

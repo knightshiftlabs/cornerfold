@@ -56,8 +56,15 @@ export function stampPolicy(html, date) {
   return html.replace(UPDATED, `Last updated: ${longDate(date)}`)
 }
 
-/** A page's text with its date line and line-ending differences ignored, to see whether it really changed. */
-export const policyText = (html) => html.replace(UPDATED, '').replace(/\r\n/g, '\n')
+/**
+ * A page's text with its date line, its footer of links to other pages, and line-ending differences ignored, to
+ * see whether the policy itself really changed. Adding a link to the footer is not a change to the terms.
+ */
+export const policyText = (html) =>
+  html
+    .replace(UPDATED, '')
+    .replace(/<footer>[\s\S]*?<\/footer>/g, '')
+    .replace(/\r\n/g, '\n')
 
 // Output is returned exactly as git printed it: a file's own trailing newline matters when comparing copies.
 const git = (args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })

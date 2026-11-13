@@ -8,6 +8,8 @@ import {
   closestCenter,
   useSensor,
   useSensors,
+  type Announcements,
+  type ScreenReaderInstructions,
 } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -16,6 +18,36 @@ import { useStore, type Page } from '../lib/store'
 import { getThumb, peekThumb } from '../lib/pdf'
 import { entering } from '../lib/motion'
 import { deletePages } from '../lib/actions'
+
+
+// What a screen reader says while a page is moved with the keyboard. The library's own wording names each item
+// by its internal id, which for Cornerfold is a random string, so people would hear "draggable item 8f3a2c…".
+const position = (id: string | number) => useStore.getState().pages.findIndex((p) => p.id === String(id)) + 1
+// Only a change of position is announced. The library also reports the page as over its own starting place the
+// moment it is picked up, which would cut off the instructions before anyone heard them. Positions are noted
+// during the move: by the time the drop is announced, the pages have already been reordered.
+let lastOver: string | null = null
+let from = 0
+let to = 0
+const announcements: Announcements = {
+  onDragStart: ({ active }) => {
+    lastOver = String(active.id)
+    from = to = position(active.id)
+    return `Picked up page ${from} of ${useStore.getState().pages.length}. Use the arrow keys to move it, Space to drop it, or Escape to cancel.`
+  },
+  onDragOver: ({ over }) => {
+    const now = over ? String(over.id) : null
+    if (now === lastOver) return undefined
+    lastOver = now
+    to = over ? position(over.id) : 0
+    return to ? `Page ${from} is over position ${to}.` : `Page ${from} is not over a position.`
+  },
+  onDragEnd: ({ over }) => (over && to && to !== from ? `Page ${from} dropped at position ${to}.` : `Page ${from} dropped where it was.`),
+  onDragCancel: () => `Moving cancelled. Page ${from} is back where it was.`,
+}
+const screenReaderInstructions: ScreenReaderInstructions = {
+  draggable: 'To move a page, press Space, then use the arrow keys, and press Space again to drop it. Press Escape to cancel.',
+}
 
 export function PageGrid() {
   const pages = useStore((s) => s.pages)
@@ -38,6 +70,7 @@ export function PageGrid() {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        accessibility={{ announcements, screenReaderInstructions }}
         onDragStart={(e) => setActiveId(String(e.active.id))}
         onDragEnd={(e) => {
           setActiveId(null)

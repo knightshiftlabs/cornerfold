@@ -13,10 +13,23 @@ test('the app opens under the real security headers', async ({ page, app }) => {
   await expect(page).toHaveTitle(/Cornerfold/)
 })
 
-for (const path of ['/privacy', '/terms', '/about', '/changes', '/licenses.txt', '/.well-known/security.txt']) {
+for (const path of ['/privacy', '/terms', '/about', '/changes', '/verify', '/licenses.txt', '/.well-known/security.txt']) {
   test(`${path} loads`, async ({ page }) => {
     const response = await page.goto(path)
     expect(response!.status()).toBe(200)
     await expect(page.locator('body')).not.toBeEmpty()
   })
 }
+
+// Promised on the Check our claims page.
+test('using the app sets no cookies, and no response tries to', async ({ page, context, app }) => {
+  const setCookie: string[] = []
+  page.on('response', (r) => r.headers()['set-cookie'] && setCookie.push(r.url()))
+  await app.open()
+  await app.add('report.pdf', 'photo.jpg')
+  await app.thumbnails(5)
+  await app.exportPdf()
+  expect(await context.cookies()).toEqual([])
+  expect(await page.evaluate(() => document.cookie)).toBe('')
+  expect(setCookie).toEqual([])
+})

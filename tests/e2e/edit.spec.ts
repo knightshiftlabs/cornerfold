@@ -23,12 +23,30 @@ test('dragging a page with the mouse moves it', async ({ page, app }) => {
   await expect.poll(() => order(page)).toBe('2314')
 })
 
-test('a page can be moved with the keyboard alone', async ({ page, app }) => {
+test('a page can be moved with the keyboard alone, with each step announced in plain words', async ({ page, app }) => {
+  // What a screen reader hears. Waiting for each announcement is also how a person paces the keys: the first
+  // version of this test pressed all three within milliseconds, faster than the drag starts on a quick machine.
+  const said = page.locator('[id^="DndLiveRegion"]')
   await app.card(1).focus()
   await page.keyboard.press('Space')
+  await expect(said).toHaveText('Picked up page 1 of 4. Use the arrow keys to move it, Space to drop it, or Escape to cancel.')
   await page.keyboard.press('ArrowRight')
+  await expect(said).toHaveText('Page 1 is over position 2.')
   await page.keyboard.press('Space')
+  await expect(said).toHaveText('Page 1 dropped at position 2.')
   await expect.poll(() => order(page)).toBe('2134')
+})
+
+test('Escape cancels a keyboard move and says so', async ({ page, app }) => {
+  const said = page.locator('[id^="DndLiveRegion"]')
+  await app.card(2).focus()
+  await page.keyboard.press('Space')
+  await expect(said).toContainText('Picked up page 2 of 4.')
+  await page.keyboard.press('ArrowRight')
+  await expect(said).toHaveText('Page 2 is over position 3.')
+  await page.keyboard.press('Escape')
+  await expect(said).toHaveText('Moving cancelled. Page 2 is back where it was.')
+  await expect.poll(() => order(page)).toBe('1234')
 })
 
 test('rotate, delete, undo and redo, and the export matches what is on screen', async ({ page, app }) => {

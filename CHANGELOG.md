@@ -8,6 +8,20 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.3.2] - TBD
+
+### Added
+- A Check our claims page: every promise Cornerfold makes, how it is kept, the automatic test that fails if it stops being true, and how you can check it yourself.
+- A daily check of the live site, also run after every change: it builds the public source code and fails unless cornerfold.org serves exactly those files, loads nothing from any other website, and sends the right security headers.
+
+### Changed
+- Every page now tells anything between Cornerfold and you not to change it, so no one can add scripts on the way. Our hosting provider's analytics, which tried to add one, are switched off. Its script was always blocked by the site's security settings, and never recorded a visit.
+- Other websites can no longer read Cornerfold's files.
+- The privacy policy now covers our host's network error logging, saving pages as images or text, and California's privacy law.
+
+### Fixed
+- Moving a page with the keyboard is now announced to screen readers in plain words, such as “Picked up page 2 of 9” and “Page 2 dropped at position 5”. Before, they heard an internal code for the page, and the instructions for moving it were cut off as soon as it was picked up.
+
 ## [1.3.1] - 2026-11-13
 
 ### Fixed

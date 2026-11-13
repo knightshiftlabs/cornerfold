@@ -69,6 +69,10 @@ describe('stamping a policy page', () => {
     expect(policyText(page)).toBe(policyText(page.replace('5 November', '1 January')))
     expect(policyText(page)).toBe(policyText(page.replace(/\n/g, '\r\n')))
     expect(policyText(page)).not.toBe(policyText(page.replace('Text.', 'More text.')))
+    // A new link in the footer is not a change to the policy (regression: 1.3.2's new footer link re-dated the Terms).
+    const withFooter = `${page}<footer><a href="/">Cornerfold</a></footer>`
+    expect(policyText(withFooter)).toBe(policyText(withFooter.replace('</footer>', '<a href="/verify.html">Check our claims</a></footer>')))
+    expect(policyText(withFooter)).not.toBe(policyText(withFooter.replace('Text.', 'Changed terms.')))
   })
 })
 
