@@ -55,6 +55,37 @@ npm test
 No browser, Python or other tools are needed: PDF and image work runs on a Node canvas library
 that installs with the other packages.
 
+## Browser tests
+
+`npm run test:e2e` builds the site and runs it in a real Chrome, on a desktop and as a touch phone
+(about 5 minutes; each test has a trace for replaying it if it fails). The files are in `tests/e2e/`:
+
+| File | What it checks |
+| --- | --- |
+| `smoke.spec.ts` | The security headers really arrive, and every page of the site loads under them |
+| `files.spec.ts` | Adding files: the picker, every image type, drag and drop, paste, files that can't be used |
+| `edit.spec.ts` | Moving pages with a mouse and with the keyboard alone, rotating, deleting, selecting, undo and redo |
+| `export.spec.ts` | Exports, splitting, compression (the size shown is the size delivered), fitting under a limit, metadata removed |
+| `unlock.spec.ts` | Locked and restricted PDFs, wrong passwords, and that the password is left nowhere in the browser |
+| `tools.spec.ts` | Each tool in the Tools menu through its real panel, with every file it makes checked |
+| `phone.spec.ts` | Screens from 320 pixels wide: nothing wider than the screen, labels on one line, every tool reachable |
+
+Two things make these tests worth more than clicking around:
+
+- **The real security policy.** `tests/e2e/server.mjs` serves the build with the headers from
+  `public/_headers`, as Cloudflare does. Vite's own preview server sends none, which is how 1.3.0
+  shipped a tool that the live site's policy blocked.
+- **A guard on every test** (`tests/e2e/fixtures.ts`): a test fails if any request leaves the site,
+  anything breaks the security policy, or the page logs an error. The privacy promise is checked on
+  every action of every test, not in one test of its own.
+
+Rules: no automatic retries, because a test that passes the second time is a bug to fix. Tests that are slow
+by nature say so and wait as long as it takes. Before trusting a new test, break the code it guards and
+watch it fail.
+
+If Playwright can't download its own Chrome on your machine, point it at another Chromium:
+`CHROMIUM_PATH=/path/to/chrome npm run test:e2e`.
+
 ## Fuzzing
 
 `npm run test:fuzz` feeds randomly corrupted PDFs, 400 per run by default (flipped bytes, inserted tokens,
@@ -74,20 +105,16 @@ offending input is saved to `tests/fuzz/failures/` so it can be replayed.
 
 ## What is not tested automatically
 
-Be honest about these; they need a real browser or a person:
+Be honest about these. The browser tests run in Chrome only; these still need other browsers, real
+devices or a person:
 
-- Real browsers and devices: Chrome, Safari, Firefox, Android, iPhone, low-memory phones
-- Drawing page thumbnails (pdf.js is replaced by a stand-in in the interface tests)
-- Dragging pages to reorder, the file picker, drag-and-drop from the desktop, pasting
-- Downloads actually being saved, especially from the installed app on iPhone
+- Safari, Firefox, real Android phones and iPhones, low-memory phones
+- Downloads from the app installed on an iPhone home screen
 - Offline mode, installing as an app, and the service worker
-- The security headers and policy (they come from Cloudflare, not the code)
 - Recovering when a new version is deployed while the app is open
-- Redrawing sideways phone photos upright (needs a browser canvas; only reading the rotation is tested)
-- Decoding HEIC, WebP, AVIF, GIF or BMP images (the test stand-in decodes only PNG and JPEG)
-- Finding blank pages, the large preview, and saving as images or text (they draw pages with pdf.js in the browser)
-- How the toolbar and Tools menu fit on a phone screen (layout needs a real browser)
-- Visual design, dark mode, accessibility with screen readers
+- The live site's headers (the tests check `public/_headers` as served by the test server, not what Cloudflare actually sends)
+- Redrawing sideways phone photos upright, and HEIC and AVIF photos
+- Accessibility with screen readers, visual design, dark mode
 - Very large files close to a device’s memory limit
 
 The manual checklist in the torture-test pack covers these. Run it before any release that touches

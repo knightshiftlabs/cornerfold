@@ -49,6 +49,8 @@ The remaining personal data is the host's IP logs. Disclose them in the privacy 
 detection, size parsing, editing and undo, and the interface in a simulated browser. See
 `tests/README.md` for what each file covers and the rules for adding tests.
 
+`npm run test:e2e` runs the site in a real Chrome, on a desktop and as a touch phone, under its real security headers. Every one of those tests fails if a request leaves the site.
+
 **On GitHub:** every push runs the tests and the build on a clean Linux machine (`.github/workflows/ci.yml`). A red cross next to a commit means something broke. Cloudflare also runs the tests before every build (`npm test && npm run build`), so a commit with failing tests is not deployed. Security reports: see `SECURITY.md`.
 
 **Release criteria:** no release unless `npm test` passes and the production build succeeds. This is

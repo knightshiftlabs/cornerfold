@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:fuzz": "vitest run --config vitest.fuzz.config.ts",
+    "test:e2e": "npm run build && playwright test --project=desktop --project=phone",
     "preversion": "npm test && npm run build",
     "version": "node scripts/stamp-date.mjs"
   },
@@ -27,7 +28,9 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@napi-rs/canvas": "^0.1.65",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.0.9",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
@@ -42,5 +45,8 @@
   },
   "allowScripts": {
     "esbuild@0.25.12": true
+  },
+  "overrides": {
+    "playwright-core": "1.64.1"
   }
 }
