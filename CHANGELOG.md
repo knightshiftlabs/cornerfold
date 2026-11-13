@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.3.2] - TBD
+## [1.3.2] - 2026-11-13
 
 ### Added
 - A Check our claims page: every promise Cornerfold makes, how it is kept, the automatic test that fails if it stops being true, and how you can check it yourself.
