@@ -1,9 +1,10 @@
+import type { UnlockResult } from './unlock'
 import { useStore, type Page, type Source } from './store'
 import { EngineError, openPdf } from './pdf'
 import { contains } from './bytes'
 import { stage } from './motion'
 import { getWorker, unlockInWorker } from './engine'
-import { askPassword, askRestricted } from './passwords'
+import { askRestricted, questionsFor } from './passwords'
 import { stripJpegMetadata } from './jpeg'
 
 const uid = () => crypto.randomUUID()
@@ -39,13 +40,20 @@ async function mapLimit<T, R>(items: T[], limit: number, work: (item: T) => Prom
   return results
 }
 
+/** Names the files that can't be used, so someone who dropped a whole folder knows which ones. */
+export function notUsable(names: string[]) {
+  if (names.length === 1) return `${names[0]} isn’t a PDF or an image.`
+  if (names.length === 2) return `${names[0]} and ${names[1]} aren’t PDFs or images.`
+  return `${names[0]} and ${names.length - 1} more files aren’t PDFs or images.`
+}
+
 export async function ingestFiles(files: File[]) {
   const st = useStore.getState()
   const usable = files.filter((f) => isPdf(f) || isImage(f))
-  const skipped = files.length - usable.length
+  const skipped = files.filter((f) => !usable.includes(f)).map((f) => f.name)
 
   if (!usable.length) {
-    if (skipped) st.notify(skipped === 1 ? 'That file isn’t a PDF or an image.' : 'Those files aren’t PDFs or images.', { tone: 'error' })
+    if (skipped.length) st.notify(notUsable(skipped), { tone: 'error' })
     return
   }
 
@@ -85,8 +93,8 @@ export async function ingestFiles(files: File[]) {
     )
   } else if (declined.length) {
     st.notify(`${declined.length === 1 ? declined[0] : `${declined.length} files`} ${declined.length === 1 ? 'was' : 'were'} skipped because ${declined.length === 1 ? 'it’s' : 'they’re'} still locked.`)
-  } else if (skipped) {
-    st.notify(`Skipped ${skipped} ${skipped === 1 ? 'file that isn’t' : 'files that aren’t'} a PDF or image.`, { tone: 'error' })
+  } else if (skipped.length) {
+    st.notify(notUsable(skipped), { tone: 'error' })
   }
 }
 
@@ -131,15 +139,20 @@ async function unlockFile(name: string, bytes: Uint8Array): Promise<Uint8Array> 
     if (result.restricted && !(await askRestricted(name))) throw new UnlockDeclined()
     return result.bytes
   }
-  let wrong = false
-  while (result.status === 'password-needed' || result.status === 'wrong-password') {
-    const password = await askPassword(name, wrong)
-    if (password === null) throw new UnlockDeclined()
-    result = await unlockInWorker(bytes, password)
-    if (result.status === 'ok') return result.bytes
-    wrong = true
-  }
-  throw new UnsupportedProtectionError()
+  // All tries for this file are one turn, so the dialog stays up while each password is checked.
+  const first = result
+  return questionsFor(name, async (ask) => {
+    let tried: UnlockResult = first
+    let wrong = false
+    while (tried.status === 'password-needed' || tried.status === 'wrong-password') {
+      const password = await ask.password(wrong)
+      if (password === null) throw new UnlockDeclined()
+      tried = await unlockInWorker(bytes, password)
+      if (tried.status === 'ok') return tried.bytes
+      wrong = true
+    }
+    throw new UnsupportedProtectionError()
+  })
 }
 
 function describe(f: File, e: unknown) {

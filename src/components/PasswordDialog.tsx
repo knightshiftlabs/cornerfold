@@ -1,12 +1,13 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { Eye, EyeOff, Lock } from 'lucide-react'
+import { Eye, EyeOff, LoaderCircle, Lock } from 'lucide-react'
 import { usePrompt, type Prompt } from '../lib/passwords'
 import { Button, IconButton } from './ui'
 
 /** Asks for a PDF's password, or for agreement to make a copy without its editing restrictions. */
 export function PasswordDialog() {
   const prompt = usePrompt((s) => s.prompt)
-  return prompt ? <Panel prompt={prompt} /> : null
+  // A new question (a retry, or the next file) starts a fresh panel: an empty field, focused.
+  return prompt ? <Panel key={prompt.id} prompt={prompt} /> : null
 }
 
 function Panel({ prompt }: { prompt: Prompt }) {
@@ -15,7 +16,8 @@ function Panel({ prompt }: { prompt: Prompt }) {
   const panel = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLInputElement>(null)
   const needsPassword = prompt.kind === 'password'
-  const skip = () => prompt.answer(null)
+  const busy = prompt.checking
+  const skip = () => !busy && prompt.answer(null)
   const submit = () => (needsPassword ? value && prompt.answer(value) : prompt.answer('yes'))
 
   // Layout effects run as soon as the dialog is on screen, so focus and the Escape and Tab handling are in place at once.
@@ -44,6 +46,7 @@ function Panel({ prompt }: { prompt: Prompt }) {
         aria-modal="true"
         aria-labelledby="lock-title"
         aria-describedby="lock-body"
+        aria-busy={busy}
         className="toast-in-up w-full max-w-md rounded-t-3xl border border-line bg-desk p-5 shadow-[0_24px_60px_-12px_rgb(16_24_40/0.5)] outline-none sm:rounded-3xl sm:p-7"
       >
         <div className="flex items-start gap-3">
@@ -70,6 +73,7 @@ function Panel({ prompt }: { prompt: Prompt }) {
             </label>
             <div className="mt-1.5 flex items-center gap-1 rounded-2xl border border-line bg-paper pl-4 pr-1 focus-within:border-ink">
               <input
+                readOnly={busy}
                 id="lock-password"
                 ref={input}
                 type={shown ? 'text' : 'password'}
@@ -105,9 +109,20 @@ function Panel({ prompt }: { prompt: Prompt }) {
         </p>
 
         <div className="mt-6 flex justify-end gap-2">
-          <Button onClick={skip}>Skip this file</Button>
-          <Button variant="primary" data-primary onClick={submit} disabled={needsPassword && !value}>
-            {needsPassword ? 'Unlock' : 'Make editable copy'}
+          <Button onClick={skip} disabled={busy}>
+            Skip this file
+          </Button>
+          <Button variant="primary" data-primary onClick={submit} disabled={busy || (needsPassword && !value)}>
+            {busy ? (
+              <>
+                <LoaderCircle className="spin" aria-hidden="true" />
+                {needsPassword ? 'Checking' : 'Making a copy'}
+              </>
+            ) : needsPassword ? (
+              'Unlock'
+            ) : (
+              'Make editable copy'
+            )}
           </Button>
         </div>
       </div>

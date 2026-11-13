@@ -8,6 +8,15 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.3.1] - TBD
+
+### Fixed
+- Save as images failed on cornerfold.org: the site's own security settings, which block a page from fetching data, stopped one step of it. It now works. Found by new tests that run Cornerfold in a real browser under the site's real security settings.
+
+### Changed
+- After a wrong password, the password window stays open while the password is checked, then says it was wrong, instead of closing and opening again. When several locked files are added together, each file's tries now finish before the next file is asked about.
+- Files that can't be used are named in the message, such as “notes.txt isn’t a PDF or an image.”, instead of “That file isn’t a PDF or an image.”
+
 ## [1.3.0] - 2026-11-13
 
 ### Added

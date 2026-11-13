@@ -21,7 +21,18 @@ vi.mock('../src/lib/engine', async () => {
   const { unlockPdf } = await import('../src/lib/unlock') // the real unlocking, without the worker around it
   return { getWorker: () => {}, runJob: vi.fn(), unlockInWorker: unlockPdf }
 })
-vi.mock('../src/lib/passwords', () => ({ askPassword: vi.fn(), askRestricted: vi.fn() })) // the person's answers, scripted per test
+// The person's answers, scripted per test. A file's questions go through questionsFor, which here passes
+// each one to the same scripted askPassword and askRestricted.
+vi.mock('../src/lib/passwords', () => {
+  const askPassword = vi.fn()
+  const askRestricted = vi.fn()
+  return {
+    askPassword,
+    askRestricted,
+    questionsFor: (name: string, task: (ask: unknown) => Promise<unknown>) =>
+      task({ password: (wrong: boolean) => askPassword(name, wrong), restricted: () => askRestricted(name) }),
+  }
+})
 
 let ingestFiles: typeof import('../src/lib/ingest').ingestFiles
 let jpegOrientation: typeof import('../src/lib/ingest').jpegOrientation
@@ -114,10 +125,18 @@ describe('files that must be refused, each with its own explanation', () => {
   it('files that aren’t PDFs or images at all', async () => {
     await ingestFiles([file(new TextEncoder().encode('hello'), 'notes.txt', 'text/plain')])
     expect(pageCount()).toBe(0)
-    expect(toast()).toBe('That file isn’t a PDF or an image.')
+    expect(toast()).toBe('notes.txt isn’t a PDF or an image.')
     await ingestFiles([file(await textPdf(1), 'ok.pdf'), file(new Uint8Array(3), 'a.docx', 'application/msword')])
     expect(pageCount()).toBe(1)
-    expect(toast()).toMatch(/Skipped 1 file/)
+    expect(toast()).toBe('a.docx isn’t a PDF or an image.')
+  })
+
+  it('names the files it couldn’t use, so a person who dropped a folder knows which (regression)', async () => {
+    const junk = (name: string) => file(new Uint8Array(3), name, 'application/octet-stream')
+    await ingestFiles([junk('a.docx'), junk('b.xlsx')])
+    expect(toast()).toBe('a.docx and b.xlsx aren’t PDFs or images.')
+    await ingestFiles([junk('a.docx'), junk('b.xlsx'), junk('c.zip'), junk('d.mp4')])
+    expect(toast()).toBe('a.docx and 3 more files aren’t PDFs or images.')
   })
 })
 

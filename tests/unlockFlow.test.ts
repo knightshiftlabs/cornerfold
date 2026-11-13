@@ -6,7 +6,7 @@ import { installBrowserImageApis } from './helpers/canvas'
 import { textPdf } from './helpers/fixtures'
 import { PASSWORD, STATEMENT_TEXT, lockedPdf } from './helpers/lockedSamples'
 import { contains } from '../src/lib/bytes'
-import { promptOpen, usePrompt } from '../src/lib/passwords'
+import { usePrompt } from '../src/lib/passwords'
 
 vi.mock('../src/lib/pdf', async () => {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
@@ -43,10 +43,24 @@ beforeEach(() => useStore.setState({ sources: {}, pages: [], past: [], future: [
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 /** Plays the person: answers each question in turn as it appears. */
+/**
+ * Waits for a question the person hasn't answered yet. While an answer is being checked the dialog stays open,
+ * so an open dialog alone doesn't mean it is waiting for the person.
+ */
+async function nextQuestion(lastId: number) {
+  const ready = () => {
+    const p = usePrompt.getState().prompt
+    return p && !p.checking && p.id !== lastId ? p : null
+  }
+  for (let i = 0; i < 400 && !ready(); i++) await sleep(5)
+  return ready()!
+}
 async function answer(...values: (string | null)[]) {
+  let last = 0
   for (const value of values) {
-    for (let i = 0; i < 400 && !promptOpen(); i++) await sleep(5)
-    usePrompt.getState().prompt!.answer(value)
+    const question = await nextQuestion(last)
+    last = question.id
+    question.answer(value)
   }
 }
 const add = (files: { bytes: Uint8Array; name: string }[], ...answers: (string | null)[]) =>
@@ -110,10 +124,12 @@ describe('a restricted file and ordinary files together', () => {
   it('asks about several locked files one at a time', async () => {
     const seen: string[] = []
     const watcher = (async () => {
+      let last = 0
       for (const reply of [PASSWORD, null]) {
-        for (let i = 0; i < 400 && !promptOpen(); i++) await sleep(5)
-        seen.push(usePrompt.getState().prompt!.fileName)
-        usePrompt.getState().prompt!.answer(reply)
+        const question = await nextQuestion(last)
+        last = question.id
+        seen.push(question.fileName)
+        question.answer(reply)
       }
     })()
     await Promise.all([ingestFiles([new File([lockedPdf('aes256')], 'one.pdf', { type: 'application/pdf' }), new File([lockedPdf('aes128')], 'two.pdf', { type: 'application/pdf' })]), watcher])

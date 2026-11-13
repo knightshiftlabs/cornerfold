@@ -106,16 +106,20 @@ async function renderImage(source: Source) {
   return toObjectUrl(canvas)
 }
 
-const toObjectUrl = (canvas: HTMLCanvasElement, quality = 0.85, type: 'image/jpeg' | 'image/png' = 'image/jpeg') =>
-  new Promise<string>((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(URL.createObjectURL(b)) : reject(new Error('Encode failed'))), type, quality),
-  )
+const toBlob = (canvas: HTMLCanvasElement, quality = 0.85, type: 'image/jpeg' | 'image/png' = 'image/jpeg') =>
+  new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Encode failed'))), type, quality))
+const toObjectUrl = async (canvas: HTMLCanvasElement, quality = 0.85, type: 'image/jpeg' | 'image/png' = 'image/jpeg') => URL.createObjectURL(await toBlob(canvas, quality, type))
 
 /**
  * A large, sharp picture of one page for the preview, already turned by `rotation` degrees, with its longest
  * side `longPx` pixels. The caller revokes the URL when done with it.
  */
-export async function renderLarge(source: Source, index: number, rotation: number, longPx: number, type: 'image/jpeg' | 'image/png' = 'image/jpeg') {
+export async function renderLarge(source: Source, index: number, rotation: number, longPx: number) {
+  return URL.createObjectURL(await drawPage(source, index, rotation, longPx, 'image/jpeg'))
+}
+
+/** One page drawn as an image file, already turned by `rotation` degrees, with its longest side `longPx` pixels. */
+async function drawPage(source: Source, index: number, rotation: number, longPx: number, type: 'image/jpeg' | 'image/png') {
   const turn = ((rotation % 360) + 360) % 360
   const canvas = document.createElement('canvas')
   try {
@@ -144,7 +148,7 @@ export async function renderLarge(source: Source, index: number, rotation: numbe
       ctx.drawImage(bmp, -bmp.width / 2, -bmp.height / 2)
       bmp.close()
     }
-    return await toObjectUrl(canvas, 0.92, type)
+    return await toBlob(canvas, 0.92, type)
   } finally {
     canvas.width = canvas.height = 0
   }
@@ -185,12 +189,9 @@ export async function renderPageImage(source: Source, index: number, rotation: n
     const base = page.getViewport({ scale: 1 })
     longPx = Math.min(MAX_IMAGE_PX, Math.round((Math.max(base.width, base.height) * dpi) / 72))
   } else longPx = Math.max(source.width ?? 1, source.height ?? 1)
-  const url = await renderLarge(source, index, turn, longPx, type)
-  try {
-    return new Uint8Array(await (await fetch(url)).arrayBuffer())
-  } finally {
-    URL.revokeObjectURL(url)
-  }
+  // The bytes come straight from the drawing. (Reading them back with fetch() is blocked by the site's
+  // security policy, which allows no fetching at all: that was a bug in 1.3.0.)
+  return new Uint8Array(await (await drawPage(source, index, turn, longPx, type)).arrayBuffer())
 }
 
 /** The text on one page, as plain lines. Pages that are pictures (scans, photos) have none. */
