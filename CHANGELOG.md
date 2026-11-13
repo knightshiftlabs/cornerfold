@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.3.0] - TBD
+## [1.3.0] - 2026-11-13
 
 ### Added
 - A Tools menu, which holds everything below. On phones it opens from the bottom of the screen.
