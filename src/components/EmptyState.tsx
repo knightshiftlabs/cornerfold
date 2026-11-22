@@ -58,6 +58,9 @@ export function EmptyState() {
         <a href="/licenses.txt" className="hover:text-fg">
           Open-source licenses
         </a>
+        <a href="https://github.com/knightshiftlabs/cornerfold" className="hover:text-fg" rel="noopener">
+          Source code
+        </a>
         <a href="mailto:hello@cornerfold.org" className="hover:text-fg">
           Contact
         </a>

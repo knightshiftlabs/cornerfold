@@ -4,6 +4,7 @@ import { baseName, download, message, targets } from './actions'
 import { runJob } from './engine'
 import { checkZipBudget } from './exportBudget'
 import { pageText, renderPageImage } from './pdf'
+import { hasRedactions } from './marks'
 import { useStore } from './store'
 import { combineText } from './text'
 import type { Stamps } from './stampText'
@@ -21,10 +22,13 @@ export async function saveImages(format: 'jpg' | 'png', dpi: number) {
   const files: Record<string, Uint8Array> = {}
   let made = 0
   try {
-    for (let i = 0; i < list.length; i++) {
+    // Redacted pages are saved from their flattened picture, never from the page itself (see lib/redact.ts).
+    st.setBusy('Applying redactions')
+    const { pages: flat, sources } = await (await import('./redact')).withRedactions(list)
+    for (let i = 0; i < flat.length; i++) {
       st.setBusy(`Saving page ${i + 1} of ${list.length}`)
-      const p = list[i]
-      files[`${base}-page-${pad(i + 1, list.length)}.${format}`] = await renderPageImage(st.sources[p.sourceId], p.index, p.rotation, dpi, type)
+      const p = flat[i]
+      files[`${base}-page-${pad(i + 1, list.length)}.${format}`] = await renderPageImage(sources[p.sourceId], p.index, p.rotation, dpi, type)
       made += files[Object.keys(files).at(-1)!].length
       checkZipBudget(i + 1, list.length, made, 'Save fewer pages at a time, or choose a lower detail.')
     }
@@ -50,6 +54,11 @@ export async function collectText() {
   const parts = []
   for (let i = 0; i < list.length; i++) {
     const p = list[i]
+    // The text of a redacted page is what redaction removes, so it is never read.
+    if (hasRedactions(p.marks)) {
+      parts.push({ page: i + 1, text: '' })
+      continue
+    }
     parts.push(await pageText(st.sources[p.sourceId], p.index).then((text) => ({ page: i + 1, text }), () => ({ page: i + 1, text: '', failed: true })))
   }
   return { ...combineText(parts), total: list.length, name: `${baseName(list)}.txt` }

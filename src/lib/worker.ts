@@ -18,6 +18,8 @@ interface WorkerSource {
   mime?: string
   width?: number
   height?: number
+  /** A redacted page's picture: the page is exactly this size, whatever the paper setting. */
+  pointSize?: [number, number]
 }
 interface JobPage {
   sourceId: string
@@ -134,7 +136,7 @@ async function assemble(pages: JobPage[], recipe: Recipe) {
         images.set(s.id, img)
       }
       // 96 dpi pixels to PDF points, then onto the paper chosen for photos
-      const { page: size, box } = placeImage(s.width! * 0.75, s.height! * 0.75, recipe.paper)
+      const { page: size, box } = s.pointSize ? { page: s.pointSize, box: { x: 0, y: 0, width: s.pointSize[0], height: s.pointSize[1] } } : placeImage(s.width! * 0.75, s.height! * 0.75, recipe.paper)
       page = out.addPage(size)
       page.drawImage(img, box)
     }
@@ -151,8 +153,8 @@ async function assemble(pages: JobPage[], recipe: Recipe) {
 async function visualSize(p: JobPage): Promise<[number, number]> {
   const s = sources.get(p.sourceId)
   if (!s) throw new Error('Source missing in worker')
-  let width = (s.width ?? 0) * 0.75
-  let height = (s.height ?? 0) * 0.75
+  let width = s.pointSize?.[0] ?? (s.width ?? 0) * 0.75
+  let height = s.pointSize?.[1] ?? (s.height ?? 0) * 0.75
   let turn = p.rotation
   if (s.kind === 'pdf') {
     const page = (await loadSource(s.id)).getPage(p.index)

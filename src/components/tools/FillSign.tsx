@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { Check, ChevronLeft, ChevronRight, LoaderCircle, Minus, PenLine, Plus, CalendarDays, Trash2, Type, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, LoaderCircle, Minus, PenLine, Plus, CalendarDays, EyeOff, Trash2, Type, X } from 'lucide-react'
 import { clamp01, type Mark, type MarkImage } from '../../lib/marks'
 import { placeImage } from '../../lib/paper'
 import { pageFields, pdfPageSize, renderLarge, type FormField } from '../../lib/pdf'
@@ -8,12 +8,13 @@ import { newId, useStore, type Page } from '../../lib/store'
 import { Button } from '../ui'
 import { SignatureMaker } from './SignatureMaker'
 import { SIGNATURE_NOTE } from '../../lib/signature'
+import { REDACT_NOTE } from '../../lib/redactNote'
 
 /** A mark before it has an id and a place. (Omit over each kind separately, so each keeps its own fields.) */
 type NewMark = Mark extends infer M ? (M extends Mark ? Omit<M, 'id' | 'x' | 'y'> & { x?: number; y?: number } : never) : never
 
 const today = () => new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-const label = (m: Mark) => (m.kind === 'text' ? `Text: ${m.text || 'empty'}` : m.kind === 'image' ? 'Signature' : m.kind === 'tick' ? 'Tick' : 'Cross')
+const label = (m: Mark) => (m.kind === 'text' ? `Text: ${m.text || 'empty'}` : m.kind === 'image' ? 'Signature' : m.kind === 'redact' ? 'Redaction' : m.kind === 'tick' ? 'Tick' : 'Cross')
 
 /** The page as it will be exported, before any turn added in Cornerfold: its picture and its size in points. */
 function usePageView(page: Page | undefined) {
@@ -129,6 +130,10 @@ export default function FillSign() {
       x -= (armed.size * pt) / 2 / r.width
       y -= (armed.size * pt) / 2 / r.height
     } else if (armed.kind === 'text') y -= (armed.size * pt * 0.6) / r.height
+    else if (armed.kind === 'redact') {
+      x = Math.min(1 - armed.w, Math.max(0, x - armed.w / 2))
+      y = Math.min(1 - armed.h, Math.max(0, y - armed.h / 2))
+    }
     add({ ...armed, x: clamp01(x), y: clamp01(y) } as NewMark)
     setArmed(null)
   }
@@ -165,7 +170,8 @@ export default function FillSign() {
     const dx = (e.clientX - d.x) / box[0]
     const dy = (e.clientY - d.y) / box[1]
     const m = d.start
-    if (d.mode === 'move') setDraft({ ...m, x: clamp01(m.x + dx), y: clamp01(m.y + dy) } as Mark)
+    if (d.mode === 'move') setDraft({ ...m, x: m.kind === 'redact' ? Math.min(1 - m.w, Math.max(0, m.x + dx)) : clamp01(m.x + dx), y: m.kind === 'redact' ? Math.min(1 - m.h, Math.max(0, m.y + dy)) : clamp01(m.y + dy) } as Mark)
+    else if (m.kind === 'redact') setDraft({ ...m, w: Math.max(0.01, Math.min(1 - m.x, m.w + dx)), h: Math.max(0.01, Math.min(1 - m.y, m.h + dy)) })
     else if (m.kind === 'image') {
       const w = Math.max(0.04, Math.min(1 - m.x, m.w + dx))
       setDraft({ ...m, w, h: m.h * (w / m.w) })
@@ -202,6 +208,9 @@ export default function FillSign() {
     if (m.kind === 'image') {
       const w = Math.max(0.04, Math.min(1, m.w * (dir > 0 ? 1.1 : 1 / 1.1)))
       update(m.id, { w, h: m.h * (w / m.w) })
+    } else if (m.kind === 'redact') {
+      const k = dir > 0 ? 1.1 : 1 / 1.1
+      update(m.id, { w: Math.max(0.01, Math.min(1 - m.x, m.w * k)), h: Math.max(0.01, Math.min(1 - m.y, m.h * k)) })
     } else update(m.id, { size: Math.max(6, Math.min(120, Math.round(m.size * (dir > 0 ? 1.15 : 1 / 1.15)))) })
   }
 
@@ -269,6 +278,10 @@ export default function FillSign() {
         <Button className="border border-line" aria-pressed={armed?.kind === 'text' && !!(armed as { text: string }).text} onClick={offer({ kind: 'text', text: today(), size: 12 })}>
           <CalendarDays />
           Date
+        </Button>
+        <Button className="border border-line" aria-pressed={armed?.kind === 'redact'} onClick={offer({ kind: 'redact', w: 0.3, h: 0.04 })}>
+          <EyeOff />
+          Redact
         </Button>
         {current && (
           <span className="ml-auto flex items-center gap-1" aria-label="Selected item">
@@ -348,6 +361,7 @@ export default function FillSign() {
           <p>
             Drag to move, or use the arrow keys. Changes are added to the pages here, and appear in everything you export.{' '}
             {marks.some((m) => m.kind === 'image') && <span className="block">{SIGNATURE_NOTE}</span>}
+            {marks.some((m) => m.kind === 'redact') && <span className="block font-medium text-fg">{REDACT_NOTE}</span>}
             {fields.length > 0 && (
               <label className="ml-1 inline-flex items-center gap-1.5 font-medium text-fg">
                 <input type="checkbox" checked={lockAnswers} onChange={(e) => setLockAnswers(e.currentTarget.checked)} className="size-4 accent-[var(--ink)]" />
@@ -482,6 +496,12 @@ function MarkView(props: {
     return (
       <div {...common} className={`absolute cursor-move ${ring}`} style={{ ...pos, width: `${m.w * 100}%`, height: `${m.h * 100}%` }}>
         {url && <img src={url} alt="" draggable={false} className="pointer-events-none size-full" />}
+        {selected && <span aria-hidden="true" onPointerDown={(e) => props.onPointerDown(e, 'resize')} className="absolute -bottom-2 -right-2 size-4 cursor-nwse-resize rounded-full border-2 border-white bg-ink" />}
+      </div>
+    )
+  if (m.kind === 'redact')
+    return (
+      <div {...common} className={`absolute cursor-move bg-black/85 ${ring}`} style={{ ...pos, width: `${m.w * 100}%`, height: `${m.h * 100}%` }}>
         {selected && <span aria-hidden="true" onPointerDown={(e) => props.onPointerDown(e, 'resize')} className="absolute -bottom-2 -right-2 size-4 cursor-nwse-resize rounded-full border-2 border-white bg-ink" />}
       </div>
     )

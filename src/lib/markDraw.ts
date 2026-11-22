@@ -39,6 +39,9 @@ export async function drawMarks(page: PDFPage, marks: Mark[], ctx: MarkContext) 
   // From a fraction measured from the top left as seen, to the page's own coordinates.
   const at = (fx: number, fy: number) => toPageSpace(box, turn, fx * w, h - fy * h)
   for (const m of marks) {
+    // Redactions are burned into the page picture before a job is sent (lib/redact.ts). One reaching this point
+    // means that step was skipped, and drawing a black box over text that is still in the file would hide nothing.
+    if (m.kind === 'redact') throw new Error('A redaction was not applied, so nothing was exported. Please try again.')
     if (m.kind === 'text') {
       m.text.split('\n').forEach((line, i) => {
         if (!line) return

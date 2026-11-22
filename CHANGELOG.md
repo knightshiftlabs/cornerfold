@@ -8,6 +8,16 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.8.0] - TBD
+
+### Added
+- Redact. In Fill and sign, choose Redact, click where the box should go, then drag its corner to cover what must be hidden. When you export, each redacted page becomes a picture with the box burned into the pixels, so the covered text is removed for good, not just hidden under a black shape. This applies to every export: merge, split, compress, page numbers, watermarks and saving pages as images. Redacted pages lose their selectable text, and saving text skips them.
+- Every release is now published on GitHub with a `SHA256SUMS.txt` of every file in the built site, so a download can be checked against the site.
+- A Source code link in the footer of every page.
+
+### Changed
+- Cornerfold is now free software under the GNU Affero General Public License (AGPL-3.0 or later). You may use, study, change and share it; if you run a changed version for others, you must share its source too. See LICENSE and CONTRIBUTING.md. Cornerfold itself is unchanged: it still works the same, and nothing about how your files are handled has changed.
+
 ## [1.7.0] - 2026-11-23
 
 ### Fixed

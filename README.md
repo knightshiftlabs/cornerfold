@@ -4,6 +4,8 @@ PDF tools that never see your files. Merge, split, compress, reorder and rotate 
 
 Live at https://cornerfold.org
 
+**Licence:** [AGPL-3.0-or-later](LICENSE). See [CONTRIBUTING.md](CONTRIBUTING.md) for contributions and commercial licensing.
+
 **Pillars:** private (files never leave the device), a UI people enjoy, no ads.
 
 ## Run it

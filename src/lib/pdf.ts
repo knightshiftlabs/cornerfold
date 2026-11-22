@@ -2,6 +2,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
 // Bundled and served from our own origin: no CDN, no third-party request.
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import type { Source } from './store'
+import { pixelBoxes, type Box } from './redactGeometry'
 
 /** The app's code couldn't be loaded, usually because a new version was deployed while this tab was open. */
 export class EngineError extends Error {}
@@ -119,7 +120,7 @@ export async function renderLarge(source: Source, index: number, rotation: numbe
 }
 
 /** One page drawn as an image file, already turned by `rotation` degrees, with its longest side `longPx` pixels. */
-async function drawPage(source: Source, index: number, rotation: number, longPx: number, type: 'image/jpeg' | 'image/png') {
+async function drawPage(source: Source, index: number, rotation: number, longPx: number, type: 'image/jpeg' | 'image/png', paint?: (ctx: CanvasRenderingContext2D, width: number, height: number) => void) {
   const turn = ((rotation % 360) + 360) % 360
   const canvas = document.createElement('canvas')
   try {
@@ -148,6 +149,7 @@ async function drawPage(source: Source, index: number, rotation: number, longPx:
       ctx.drawImage(bmp, -bmp.width / 2, -bmp.height / 2)
       bmp.close()
     }
+    paint?.(canvas.getContext('2d')!, canvas.width, canvas.height)
     return await toBlob(canvas, 0.92, type)
   } finally {
     canvas.width = canvas.height = 0
@@ -192,6 +194,32 @@ export async function renderPageImage(source: Source, index: number, rotation: n
   // The bytes come straight from the drawing. (Reading them back with fetch() is blocked by the site's
   // security policy, which allows no fetching at all: that was a bug in 1.3.0.)
   return new Uint8Array(await (await drawPage(source, index, turn, longPx, type)).arrayBuffer())
+}
+
+/** The longest side of a redacted page's picture: 200 dpi on A4, and never more than this, so memory stays in check. */
+const REDACT_DPI = 200
+const REDACT_MAX_PX = 5000
+
+/**
+ * One page drawn as a picture with black boxes burned into its pixels, so what they cover exists nowhere in the
+ * result. `boxes` are fractions of the picture. A PDF page is drawn at 200 dpi (as it is seen, with its own built-in
+ * turn); a photo at its own pixels. Returns the JPEG and its size in pixels.
+ */
+export async function renderRedacted(source: Source, index: number, boxes: Box[]) {
+  let longPx: number
+  if (source.kind === 'pdf') {
+    const doc = await docs.get(source.id)
+    if (!doc) throw new Error('Document not loaded')
+    const base = (await doc.getPage(index + 1)).getViewport({ scale: 1 })
+    longPx = Math.min(REDACT_MAX_PX, Math.round((Math.max(base.width, base.height) * REDACT_DPI) / 72))
+  } else longPx = Math.max(source.width ?? 1, source.height ?? 1)
+  let size: [number, number] = [0, 0]
+  const blob = await drawPage(source, index, 0, longPx, 'image/jpeg', (ctx, w, h) => {
+    size = [w, h]
+    ctx.fillStyle = '#000'
+    for (const [x, y, bw, bh] of pixelBoxes(boxes, w, h)) ctx.fillRect(x, y, bw, bh)
+  })
+  return { bytes: new Uint8Array(await blob.arrayBuffer()), width: size[0], height: size[1] }
 }
 
 /** The text on one page, as plain lines. Pages that are pictures (scans, photos) have none. */

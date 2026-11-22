@@ -23,6 +23,8 @@ export interface Source {
   mime?: 'image/png' | 'image/jpeg'
   width?: number
   height?: number
+  /** A picture that stands for a whole page (a redacted page): the page is exactly this size in points, whatever the paper setting. */
+  pointSize?: [number, number]
 }
 
 /** The tools that open a panel of their own. */

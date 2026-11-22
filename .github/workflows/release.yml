@@ -1,0 +1,36 @@
+# When a version is tagged (git push --follow-tags), builds it on GitHub's machines and publishes a Release with the
+# built site as one archive, a SHA256SUMS.txt for every file in it, and that version's changelog entry. The same
+# build is what cornerfold.org serves, so anyone can compare: `sha256sum -c SHA256SUMS.txt` inside the unpacked
+# archive, or the daily live-site check, which compares the running site with a fresh build.
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Assets
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          node scripts/release-assets.mjs "$VERSION" release
+          # A fixed order, owner and time, so building the same commit twice gives the same archive.
+          tar --sort=name --owner=0 --group=0 --numeric-owner --mtime='2026-01-01 00:00Z' -C dist -cf - . | gzip -n > "release/cornerfold-$VERSION.tar.gz"
+          (cd release && sha256sum "cornerfold-$VERSION.tar.gz" >> SHA256SUMS.txt)
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" "release/cornerfold-$VERSION.tar.gz" release/SHA256SUMS.txt \
+            --title "Cornerfold $VERSION" --notes-file release/notes.md --verify-tag

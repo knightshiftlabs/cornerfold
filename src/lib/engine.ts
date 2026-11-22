@@ -1,4 +1,4 @@
-import { useStore, type Page } from './store'
+import { useStore, type Page, type Source } from './store'
 import type { UnlockResult } from './unlock'
 
 type OutFile = { name: string; bytes: Uint8Array }
@@ -49,15 +49,23 @@ function recipeFor(pages: Page[]) {
   return { paper: st.paper, ...(Object.keys(fields).length ? { fields } : {}), ...(st.lockAnswers ? { flatten: true } : {}), ...(images.length ? { images } : {}) }
 }
 
-export function runJob(op: 'merge' | 'split' | 'compress' | 'blank' | 'stamp', pages: Page[], name: string, options?: JobOptions): Promise<JobResult> {
+export async function runJob(op: 'merge' | 'split' | 'compress' | 'blank' | 'stamp', pages: Page[], name: string, options?: JobOptions): Promise<JobResult> {
+  // Redacted pages are turned into pictures first, here, so that no export can skip it (see lib/redact.ts).
+  if (pages.some((p) => p.marks?.some((m) => m.kind === 'redact'))) {
+    const flat = await (await import('./redact')).withRedactions(pages)
+    return send(op, flat.pages, name, flat.sources, options)
+  }
+  return send(op, pages, name, useStore.getState().sources, options)
+}
+
+function send(op: 'merge' | 'split' | 'compress' | 'blank' | 'stamp', pages: Page[], name: string, sources: Record<string, Source>, options?: JobOptions): Promise<JobResult> {
   const w = getWorker()
-  const { sources } = useStore.getState()
   const id = ++seq
   const fresh = [...new Set(pages.map((p) => p.sourceId))].filter((sid) => !sent.has(sid))
   const payload = fresh.map((sid) => {
     const s = sources[sid]
     sent.add(sid)
-    return { id: s.id, kind: s.kind, pageCount: s.pageCount, mime: s.mime, width: s.width, height: s.height, bytes: s.bytes.slice() }
+    return { id: s.id, kind: s.kind, pageCount: s.pageCount, mime: s.mime, width: s.width, height: s.height, ...(s.pointSize ? { pointSize: s.pointSize } : {}), bytes: s.bytes.slice() }
   })
   return new Promise((resolve, reject) => {
     waiting.set(id, { resolve, reject })

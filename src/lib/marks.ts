@@ -10,6 +10,8 @@ export type Mark =
   | { id: string; kind: 'text'; x: number; y: number; text: string; /** In points. */ size: number }
   | { id: string; kind: 'image'; x: number; y: number; w: number; h: number; imageId: string }
   | { id: string; kind: 'tick' | 'cross'; x: number; y: number; /** In points. */ size: number }
+  /** An area to black out for good. It is never drawn as a mark: exporting burns it into the page picture (lib/redact.ts). */
+  | { id: string; kind: 'redact'; x: number; y: number; w: number; h: number }
 
 /** A picture used by image marks, such as a drawn signature: a PNG with see-through background. */
 export interface MarkImage {
@@ -28,3 +30,8 @@ export const LINE_HEIGHT = 1.25
 export const ASCENT = 0.8
 
 export const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
+
+/** The areas a page's redactions cover, as fractions of the page like every mark. */
+export const redactionsOf = (marks: readonly Mark[] | undefined) =>
+  (marks ?? []).flatMap((m) => (m.kind === 'redact' ? [{ x: m.x, y: m.y, w: m.w, h: m.h }] : []))
+export const hasRedactions = (marks: readonly Mark[] | undefined) => (marks ?? []).some((m) => m.kind === 'redact')
