@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.5.0] - TBD
+## [1.5.0] - 2026-11-23
 
 ### Added
 - Appearance, a new panel with over a dozen choices: Light, Dark, Midnight (true black), Paper, or follow your device; seven accent colours; four desks (Graphite, Slate, Linen, Felt); bright, soft or warm paper; flat, soft or lifted page shadows; how chosen pages look (a folded corner, a tick or a ring); sharp, soft or round corners; compact, calm or airy spacing; how frosted the panels are; page size; text size; calm or no animation; higher contrast; keyboard hints; and an optional soft tick when a page lands.
