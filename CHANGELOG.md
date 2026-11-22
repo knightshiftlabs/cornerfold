@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.5.2] - TBD
+## [1.5.2] - 2026-11-23
 
 ### Fixed
 - The daily check of the live site could miss a script from another website on a page that also had a canonical link. It now reads each tag on its own, and also catches addresses without a scheme, srcset images and styles. New tests try to sneak such things past it.
