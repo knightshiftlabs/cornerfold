@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
 // Tests run the real app code under Node (engine, compression, parsing) and a simulated
@@ -5,6 +6,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   resolve: {
     alias: [
+      { find: /^virtual:pwa-register$/, replacement: fileURLToPath(new URL('./tests/stubs/pwaRegister.ts', import.meta.url)) },
       { find: /^react\/jsx-runtime$/, replacement: 'preact/jsx-runtime' },
       { find: /^react\/jsx-dev-runtime$/, replacement: 'preact/jsx-dev-runtime' },
       { find: /^react-dom\/client$/, replacement: 'preact/compat/client' },

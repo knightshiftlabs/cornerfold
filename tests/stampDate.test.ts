@@ -74,6 +74,13 @@ describe('stamping a policy page', () => {
     expect(policyText(withFooter)).toBe(policyText(withFooter.replace('</footer>', '<a href="/verify.html">Check our claims</a></footer>')))
     expect(policyText(withFooter)).not.toBe(policyText(withFooter.replace('Text.', 'Changed terms.')))
   })
+
+  it('does not count a restyle (the head, the bar at the top) as a change to the policy', () => {
+    const before = `<html><head><link rel="stylesheet" href="/pages.css" /></head><body><main>\n  <p><a href="/">Back to Cornerfold</a></p>\n${page}</main></body></html>`
+    const after = `<html><head><link rel="stylesheet" href="/look.css" /><script src="/theme.js"></script></head><body><header class="bar"><a href="/">Cornerfold</a></header><main>\n${page}</main></body></html>`
+    expect(policyText(after)).toBe(policyText(before))
+    expect(policyText(after)).not.toBe(policyText(before.replace('Text.', 'Changed terms.')))
+  })
 })
 
 describe('the release script, run for real in a scratch repository', () => {

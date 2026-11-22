@@ -1,15 +1,52 @@
-/* Shared styles for the static pages (privacy, terms, what's new). Kept in a file so the CSP can forbid inline styles. */
-:root { --desk:#dce2ea; --text:#1d2532; --muted:#4f5b6c; --ink:#2433d6; --line:rgb(29 37 50 / .14); color-scheme: light dark; }
-@media (prefers-color-scheme: dark) { :root { --desk:#161d27; --text:#e6ebf2; --muted:#97a3b4; --ink:#8f9bff; --line:rgb(230 235 242 / .14); } }
-body { margin:0; background:var(--desk); color:var(--text); font: 17px/1.65 ui-sans-serif, system-ui, sans-serif; }
-main { max-width: 64ch; margin: 0 auto; padding: 56px 24px 64px; }
-h1 { font-size: 2.4rem; line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 8px; }
-h2 { font-size: 1.15rem; margin: 2.2em 0 0.4em; }
-h3 { font-size: 1rem; margin: 1.6em 0 0.3em; }
+/* The pages of the site that are not the app: About, What's new, Privacy, Check our claims, Terms.
+   They share the app's look (public/look.css, and public/theme.js for what the person chose in Appearance),
+   so a theme, accent or desk chosen in the app is the one these pages show. Kept in a file so the CSP can forbid inline styles. */
+html { --w: 52rem; scroll-padding-top: 5rem; }
+body { margin: 0; font-size: 1.0625rem; line-height: 1.65; }
+a { color: var(--link); text-underline-offset: 0.18em; text-decoration-thickness: 0.08em; }
+a:focus-visible, .open:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; border-radius: 4px; }
+code { font-size: 0.9em; padding: 0.08em 0.35em; border-radius: 6px; background: var(--desk-2); border: 1px solid var(--line); }
+
+/* The bar: the name, the other pages, and the way back to the tools. */
+.bar {
+  position: sticky; top: 12px; z-index: 5; box-sizing: border-box;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px;
+  max-width: var(--w); margin: 12px auto 0; padding: 8px 10px 8px 16px;
+  background: color-mix(in srgb, var(--glass-bg) calc(97% - var(--glass, 70) * 0.25%), transparent);
+  backdrop-filter: blur(calc(10px + var(--glass, 70) * 0.3px)) saturate(180%);
+  -webkit-backdrop-filter: blur(calc(10px + var(--glass, 70) * 0.3px)) saturate(180%);
+  border: 1px solid var(--glass-edge); border-radius: var(--r-bar);
+  box-shadow: var(--pop-shadow);
+}
+.brand { display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; font-weight: 700; font-size: 1.2rem; letter-spacing: -0.045em; }
+.brand img { width: 26px; height: 26px; border-radius: 7px; }
+.bar nav { display: flex; flex-wrap: wrap; gap: 0 4px; flex: 1 1 auto; font-size: 0.92rem; }
+.bar nav a { color: var(--muted); text-decoration: none; padding: 4px 9px; border-radius: var(--r-ctl); }
+.bar nav a:hover { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
+.bar nav a[aria-current="page"] { color: var(--text); font-weight: 600; background: color-mix(in srgb, var(--text) 10%, transparent); }
+.open {
+  margin-left: auto; padding: 7px 16px; border-radius: var(--r-ctl); text-decoration: none; font-size: 0.92rem; font-weight: 600;
+  color: #fff; background: var(--ink); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 1px 2px rgb(var(--sh) / 0.3);
+}
+.open:hover { background: var(--ink-press); }
+
+/* The page itself: a panel on the desk. */
+main {
+  box-sizing: border-box; max-width: var(--w); margin: 20px auto 56px; padding: 40px 24px 36px;
+  background: var(--glass-bg); border: 1px solid var(--glass-edge); border-radius: var(--r-panel);
+  box-shadow: var(--paper-shadow);
+}
+@media (min-width: 720px) { main { padding: 52px 48px 44px; } }
+@media (min-width: 900px) { main { padding: 52px 72px 44px; } }
+@media (max-width: 719px) { .bar, main { margin-left: 10px; margin-right: 10px; } }
+h1 { font-size: clamp(2.1rem, 5vw, 2.9rem); font-weight: 650; line-height: 1.02; letter-spacing: -0.045em; margin: 0 0 10px; text-wrap: balance; }
+h2 { font-size: 1.2rem; font-weight: 650; letter-spacing: -0.02em; margin: 2.2em 0 0.4em; }
+h3 { font-size: 1rem; font-weight: 650; margin: 1.6em 0 0.3em; }
+p { margin: 0.7em 0; }
 section { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 8px; }
-section h2 { font-size: 1.35rem; margin: 1em 0 0; }
+section h2 { font-size: 1.4rem; margin: 1em 0 0; }
 .muted, .date { color: var(--muted); }
 .date { margin-top: 2px; }
-ul { padding-left: 1.2em; margin: 0; } li { margin: 0.25em 0; }
-a { color: var(--ink); } code { font-size: .9em; }
-footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: .9rem; }
+ul { padding-left: 1.2em; margin: 0; } li { margin: 0.3em 0; }
+footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 0.9rem; }
+@media (prefers-reduced-motion: no-preference) { .open, .bar nav a { transition: background-color calc(120ms * var(--m, 1)), color calc(120ms * var(--m, 1)); } }

@@ -10,9 +10,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
-      // External script, not inline, so the strict CSP holds.
-      injectRegister: 'script',
+      // A new version waits until the page says it may take over (src/lib/updates.ts), so open files are never lost to a reload.
+      registerType: 'prompt',
+      // Registered by the app's own code, not by an injected script.
+      injectRegister: false,
       manifest: {
         name: 'Cornerfold',
         short_name: 'Cornerfold',
@@ -28,6 +29,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        clientsClaim: true,
         globPatterns: ['**/*.{js,mjs,css,html,svg,png,woff2,txt}'],
         // The link-preview image is for chat apps and social sites, not for the app itself.
         globIgnores: ['og.png'],

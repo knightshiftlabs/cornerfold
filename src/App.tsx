@@ -5,6 +5,7 @@ import { TopBar } from './components/TopBar'
 import { EmptyState } from './components/EmptyState'
 import { PageGrid } from './components/PageGrid'
 import { Toast } from './components/Toast'
+import { UpdateBar } from './components/UpdateBar'
 import { CompressDialog } from './components/CompressDialog'
 import { PasswordDialog } from './components/PasswordDialog'
 import { DropOverlay, Dock } from './components/Overlays'
@@ -41,6 +42,7 @@ export default function App() {
         </Suspense>
       )}
       <Toast />
+      <UpdateBar />
     </>
   )
 }

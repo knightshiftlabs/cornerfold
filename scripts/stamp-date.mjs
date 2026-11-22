@@ -57,14 +57,19 @@ export function stampPolicy(html, date) {
 }
 
 /**
- * A page's text with its date line, its footer of links to other pages, and line-ending differences ignored, to
- * see whether the policy itself really changed. Adding a link to the footer is not a change to the terms.
+ * A page's text with its date line, everything around the policy itself (the head, the bar of links at the top
+ * and the footer of links), and line-ending differences ignored, to see whether the policy really changed.
+ * Restyling the page, or adding a link to the footer, is not a change to the terms.
  */
 export const policyText = (html) =>
   html
     .replace(UPDATED, '')
+    .replace(/<head>[\s\S]*?<\/head>/g, '')
+    .replace(/<header[\s\S]*?<\/header>/g, '')
+    .replace(/<p><a href="\/">Back to Cornerfold<\/a><\/p>/g, '')
     .replace(/<footer>[\s\S]*?<\/footer>/g, '')
     .replace(/\r\n/g, '\n')
+    .replace(/>\s+</g, '><') // the space between tags is layout, not wording
 
 // Output is returned exactly as git printed it: a file's own trailing newline matters when comparing copies.
 const git = (args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })

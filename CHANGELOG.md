@@ -8,6 +8,19 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.6.0] - TBD
+
+### Added
+- A new version now reaches you without a hard refresh. When one is ready, Cornerfold reloads into it by itself if no files are open. If files are open, a small notice asks first, because a reload closes them: choose Reload now when you are ready, or Later.
+- The site checks for a new version every half hour and whenever you come back to the tab.
+
+### Changed
+- About, What's new, Privacy, Check our claims and Terms now look like the app: the same type, colours and frosted bar, with a bar of links at the top of each page. They also follow what you chose in Appearance (theme, accent colour, desk), so nothing changes when you move between the app and these pages.
+- Text on these pages meets WCAG AA contrast in every theme and accent colour, checked by an automatic test on each page.
+
+### Fixed
+- After a new version was released, the old one could keep showing until you hard-refreshed the page.
+
 ## [1.5.2] - 2026-11-23
 
 ### Fixed

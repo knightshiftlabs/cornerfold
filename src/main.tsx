@@ -7,8 +7,10 @@ import { loadPdfEngine, releaseSource } from './lib/pdf'
 import { forgetSources, getWorker } from './lib/engine'
 import { onRelease, useStore } from './lib/store'
 import { startPrefs } from './lib/prefs'
+import { startUpdates } from './lib/updates'
 
 startPrefs()
+startUpdates()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

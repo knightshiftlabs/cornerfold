@@ -161,7 +161,7 @@ test('a signature is kept nowhere the browser stores things, and is gone when th
     if (dbs.length) found.push(`IndexedDB: ${dbs.map((d) => d.name).join(', ')}`)
     // The offline cache holds only the app's own files, never anything made in the app.
     for (const name of await caches.keys())
-      for (const req of await (await caches.open(name)).keys()) if (!new URL(req.url).pathname.match(/^\/(assets\/|[\w.-]+\.(js|css|html|svg|png|webmanifest|txt)$|$)/)) found.push(`cache: ${req.url}`)
+      for (const req of await (await caches.open(name)).keys()) if (!new URL(req.url).pathname.match(/^\/(assets\/|fonts\/|[\w.-]+\.(js|css|html|svg|png|webmanifest|txt)$|$)/)) found.push(`cache: ${req.url}`)
     return found
   })
   expect(stored).toEqual([])

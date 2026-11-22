@@ -58,11 +58,17 @@ const html = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>What’s new: Cornerfold</title>
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="/look.css" />
 <link rel="stylesheet" href="/pages.css" />
+<script src="/theme.js"></script>
 </head>
 <body>
+<header class="bar">
+  <a class="brand" href="/"><img src="/icon.svg" alt="" width="26" height="26" />Cornerfold</a>
+  <nav aria-label="Site"><a href="/about.html">About</a><a href="/changes.html" aria-current="page">What’s new</a><a href="/privacy.html">Privacy</a><a href="/verify.html">Check our claims</a><a href="/terms.html">Terms</a></nav>
+  <a class="open" href="/">Open Cornerfold</a>
+</header>
 <main>
-  <p><a href="/">Back to Cornerfold</a></p>
   <h1>What’s new</h1>
   <p class="muted">You’re on version ${esc(version)}. Every release is listed here, newest first.</p>
   ${out.join('\n  ')}
