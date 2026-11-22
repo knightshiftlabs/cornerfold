@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.7.0] - TBD
+## [1.7.0] - 2026-11-23
 
 ### Fixed
 - A picture or signature photo with an enormous pixel size (a "decompression bomb") could freeze or crash the tab. Cornerfold now reads the size from the file's header and refuses a picture over 150 megapixels with a clear message, before decoding it, and keeps the total being decoded at once within a safe limit. Other files added with it are still added.
