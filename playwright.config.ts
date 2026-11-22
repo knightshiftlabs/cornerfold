@@ -31,6 +31,13 @@ export default defineConfig({
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 860 } }, testIgnore: /phone\.spec/ },
     { name: 'phone', use: { ...devices['Pixel 7'] }, testMatch: /phone\.spec/ },
+    // Other engines, only when asked for (CROSS_BROWSER=1): CI runs them as a report that does not block a release.
+    ...(process.env.CROSS_BROWSER
+      ? [
+          { name: 'firefox', use: { ...devices['Desktop Firefox'], viewport: { width: 1280, height: 860 }, launchOptions: {} }, testIgnore: /phone\.spec/ },
+          { name: 'webkit', use: { ...devices['Desktop Safari'], viewport: { width: 1280, height: 860 }, launchOptions: {} }, testIgnore: /phone\.spec/ },
+        ]
+      : []),
   ],
   webServer: {
     command: 'node tests/e2e/server.mjs',

@@ -31,4 +31,19 @@ describe('the privacy guard in the browser tests', () => {
   it('fails a long query string, the other way to smuggle data out in an address', () => {
     expect(bad(`${origin}/x?d=${'a'.repeat(300)}`)).toMatch(/long query/)
   })
+
+  it('fails data carried in the path of a request to the site, which the query check never saw', () => {
+    const data = 'JVBERi0xLjQK'.repeat(20)
+    expect(bad(`${origin}/collect/${data}`)).toMatch(/long path/)
+    expect(bad(`${origin}/${encodeURIComponent('a b'.repeat(60))}`)).toMatch(/long path/)
+  })
+
+  it('with a list of the site’s real paths, fails a short path that is not one of them', () => {
+    const known = (p: string) => ['/', '/assets/index-abc.js', '/privacy'].includes(p)
+    const check = (url: string) => badRequest(origin, { url, method: 'GET', hasBody: false }, known)
+    expect(check(`${origin}/privacy`)).toBeNull()
+    expect(check(`${origin}/assets/index-abc.js?v=1`)).toBeNull()
+    expect(check(`${origin}/c/Zm9v`)).toMatch(/does not have/)
+    expect(check(`${origin}/privacy/Zm9v`)).toMatch(/does not have/)
+  })
 })

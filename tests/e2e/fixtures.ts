@@ -2,8 +2,26 @@
 // and an `app` helper so tests read like what a person does.
 import { badRequest } from './guard'
 import { test as base, expect, type Page } from '@playwright/test'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+
+/** Every address the built site can answer: its files, and its pages with or without the .html. */
+const builtPaths = (() => {
+  const found = new Set<string>(['/', '/favicon.ico'])
+  const walk = (dir: string, prefix: string) => {
+    for (const e of readdirSync(join(process.cwd(), 'dist', dir), { withFileTypes: true })) {
+      const path = `${prefix}${e.name}`
+      if (e.isDirectory()) walk(join(dir, e.name), `${path}/`)
+      else {
+        found.add(path)
+        if (path.endsWith('.html')) found.add(path.slice(0, -'.html'.length))
+      }
+    }
+  }
+  walk('', '/')
+  return found
+})()
+const isBuiltPath = (pathname: string) => builtPaths.has(pathname)
 
 export { expect }
 export const FILES = join(process.cwd(), 'test-results', 'files')
@@ -70,7 +88,7 @@ export const test = base.extend<Fixtures>({
         })
       })
       context.on('request', (r) => {
-        const problem = badRequest(origin, { url: r.url(), method: r.method(), hasBody: r.postDataBuffer() !== null })
+        const problem = badRequest(origin, { url: r.url(), method: r.method(), hasBody: r.postDataBuffer() !== null }, isBuiltPath)
         if (problem) problems.push(problem)
       })
       page.on('pageerror', (e) => problems.push(`script error: ${e.message}`))

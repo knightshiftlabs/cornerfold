@@ -28,8 +28,56 @@ beforeEach(() => {
 
 describe('a new version while Cornerfold is open', () => {
   it('only reloads unasked when nothing is open', () => {
-    expect(canReloadUnasked(0)).toBe(true)
-    expect(canReloadUnasked(1)).toBe(false)
+    const idle = { pages: [], past: [], future: [], busy: null }
+    expect(canReloadUnasked(idle)).toBe(true)
+    expect(canReloadUnasked({ ...idle, pages: [1] })).toBe(false)
+    expect(canReloadUnasked({ ...idle, past: [[1]] })).toBe(false) // all pages deleted, but Undo can bring them back
+    expect(canReloadUnasked({ ...idle, future: [[1]] })).toBe(false)
+    expect(canReloadUnasked({ ...idle, busy: 'Merging' })).toBe(false)
+  })
+
+  it('does not reload unasked when every page was deleted but Undo could still bring them back', () => {
+    useStore.getState().addPages([src('a')], [page('p1')])
+    useStore.getState().remove(new Set(['p1']))
+    expect(useStore.getState().pages).toHaveLength(0)
+    expect(useStore.getState().past.length).toBeGreaterThan(0)
+    const f = fake()
+    startUpdates(f.register)
+    f.options().onNeedRefresh?.()
+    expect(f.reload).not.toHaveBeenCalled()
+    expect(useUpdate.getState().ready).toBe(true)
+  })
+
+  it('after "Later", offers the update again once every page is closed', () => {
+    useStore.getState().addPages([src('a')], [page('p1')])
+    const f = fake()
+    startUpdates(f.register)
+    f.options().onNeedRefresh?.()
+    useUpdate.getState().later()
+    expect(useUpdate.getState().ready).toBe(false)
+    useStore.getState().remove(new Set(['p1']))
+    expect(useUpdate.getState().ready).toBe(true)
+    expect(f.reload).not.toHaveBeenCalled()
+  })
+
+  it('after "Later", reloads by itself once nothing is left to lose', () => {
+    useStore.getState().addPages([src('a')], [page('p1')])
+    const f = fake()
+    startUpdates(f.register)
+    f.options().onNeedRefresh?.()
+    useUpdate.getState().later()
+    useStore.setState({ pages: [], past: [], future: [] }) // the person cleared everything, history included
+    expect(f.reload).toHaveBeenCalledWith(true)
+  })
+
+  it('does not nag while pages are still open', () => {
+    useStore.getState().addPages([src('a')], [page('p1'), page('p2')])
+    const f = fake()
+    startUpdates(f.register)
+    f.options().onNeedRefresh?.()
+    useUpdate.getState().later()
+    useStore.getState().remove(new Set(['p1']))
+    expect(useUpdate.getState().ready).toBe(false)
   })
 
   it('reloads straight away when no files are open, so nobody has to hard-refresh', () => {

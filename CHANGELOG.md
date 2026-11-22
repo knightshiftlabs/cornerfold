@@ -8,13 +8,20 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.7.0] - TBD
+
 ### Fixed
 - A picture or signature photo with an enormous pixel size (a "decompression bomb") could freeze or crash the tab. Cornerfold now reads the size from the file's header and refuses a picture over 150 megapixels with a clear message, before decoding it, and keeps the total being decoded at once within a safe limit. Other files added with it are still added.
 - Signature photos are limited to 60 megapixels and 40 MB, with a plain message if one is too large.
 - Saving many pages as images, or splitting into many parts, could run the browser out of memory while building the ZIP. Cornerfold now estimates the total as it goes and stops early with advice (fewer pages, lower detail, larger parts) instead of failing at the end.
 
+- A new version could reload the page and wipe your undo history. If you had deleted every page, nothing looked open, so Cornerfold reloaded at once, and Undo was gone with it. It now only reloads unasked when nothing is open, nothing can be undone or redone, and no job is running.
+- Choosing Later on the update notice left the update waiting with no way back to it. Cornerfold now watches your files: it reloads by itself once nothing is left to lose, and shows the notice again once you have closed every page.
+
 ### Security
-- SECURITY.md now states that Cornerfold has no paid bug bounty, and that credit is offered instead.
+- SECURITY.md now states that Cornerfold has no paid bug bounty, and that credit is offered instead. It also sets out testing rules: what is in scope, and what not to do.
+- The browser test that holds Cornerfold to its privacy promise now also fails a request to itself that hides data in the path (for example `/collect/<data>`), and any request to a path the built site does not have. Before, it only looked at the query string.
+- The PDF fuzz test now runs on every push with a fixed seed, and weekly with a random one. It fails on any stray error that comes from Cornerfold's own code. It used to ignore all of them.
 
 ## [1.6.0] - 2026-11-23
 

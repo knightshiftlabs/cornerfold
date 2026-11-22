@@ -22,6 +22,30 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  # A short fuzz run with a fixed seed: the same corrupted files every time, so a red cross here is a real regression
+  # and can be replayed. A longer random run happens weekly, see fuzz.yml.
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:fuzz
+        env:
+          FUZZ_SEED: '20261123'
+          FUZZ_ITERATIONS: '210'
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-failures
+          path: tests/fuzz/failures/
+          retention-days: 14
+          if-no-files-found: ignore
+
   # The browser tests: the built site, served with its real security headers, driven in Chrome on a desktop
   # and a phone. A separate job, so a browser failure and a unit-test failure each show on their own.
   browser-tests:
@@ -43,6 +67,34 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: browser-test-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  # The same browser tests in Firefox and Safari's engine. These are a report, not a gate: a failure here does not
+  # fail the commit, but it is worth reading, since most people do not use Chrome. (Added in 1.7.0; if it turns
+  # out reliable, make it required by removing continue-on-error.)
+  other-browsers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps firefox webkit
+      - run: npm run build
+      - run: npx playwright test --project=firefox --project=webkit
+        env:
+          CROSS_BROWSER: '1'
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: other-browsers-report
           path: |
             playwright-report/
             test-results/

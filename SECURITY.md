@@ -27,6 +27,19 @@ reports, but we do take them seriously, fix real problems quickly, and offer pub
 that ask us to join a bounty platform, or that offer paid "security services", are not reports; real
 ones go through the private channels above.
 
+## Testing rules
+
+Please keep testing non-destructive and limited to the in-scope assets below. In particular, please
+don't:
+
+- run denial-of-service or load tests against cornerfold.org
+- access or change anyone else's data (Cornerfold keeps none, but the rule applies to the hosting)
+- use social engineering against the maintainer or anyone else
+- test third-party infrastructure (Cloudflare, GitHub) without their own permission
+
+A finding you can show with a crafted file opened in your own browser is exactly the kind of report
+we want. Public credit, if offered, does not imply payment.
+
 ## Supported versions
 
 Only the latest version is supported. Cornerfold is a website, so everyone using

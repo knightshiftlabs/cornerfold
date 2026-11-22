@@ -10,7 +10,8 @@ export default defineConfig({
     include: ['tests/fuzz/**/*.test.ts'],
     exclude: [],
     testTimeout: 30 * 60_000,
-    // pdf.js's own stray internal rejections on corrupt files are counted by the fuzzer, not fatal.
+    // The PDF libraries' own stray internal rejections on corrupt files are counted by the fuzzer, not fatal.
+    // The fuzzer sorts them (tests/helpers/fuzzErrors.ts): any that passes through Cornerfold's code fails the run.
     dangerouslyIgnoreUnhandledErrors: true,
   },
 })

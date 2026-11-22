@@ -8,6 +8,7 @@ import { PDFDocument } from '@cantoo/pdf-lib'
 import { installBrowserImageApis } from '../helpers/canvas'
 import { annotatedPdf, formPdf, inheritedRotationPdf, mixedSizesPdf, textPdf } from '../helpers/fixtures'
 import { createCanvas } from '@napi-rs/canvas'
+import { classifyUnhandled } from '../helpers/fuzzErrors'
 
 const ITERATIONS = Number(process.env.FUZZ_ITERATIONS ?? 400)
 const SEED = Number(process.env.FUZZ_SEED ?? Math.floor(Math.random() * 2 ** 31))
@@ -96,7 +97,11 @@ it(`survives ${ITERATIONS} corrupted PDFs (seed ${SEED})`, async () => {
   // pdf.js occasionally leaves an internal promise unhandled after rejecting a corrupt file. In a
   // browser that's a console message with no effect on the app, so count these rather than fail.
   let pdfjsUnhandled = 0
-  process.on('unhandledRejection', () => pdfjsUnhandled++)
+  const appUnhandled: string[] = []
+  process.on('unhandledRejection', (reason) => {
+    if (classifyUnhandled(reason) === 'parser') pdfjsUnhandled++
+    else appUnhandled.push(String((reason as Error)?.stack ?? reason).split('\n').slice(0, 3).join(' | '))
+  })
   const tally = { pdfjsOpened: 0, pdfjsRejected: 0, pdflibLoaded: 0, pdflibRejected: 0, exported: 0, exportRejected: 0 }
   const failures: string[] = []
   const fail = (i: number, input: Uint8Array, why: string) => {
@@ -180,5 +185,6 @@ it(`survives ${ITERATIONS} corrupted PDFs (seed ${SEED})`, async () => {
     }
   }
   console.log(`fuzz seed ${SEED}:`, JSON.stringify({ ...tally, pdfjsUnhandledInternalErrors: pdfjsUnhandled }))
+  expect(appUnhandled, 'an unhandled rejection that did not come from a PDF library').toEqual([])
   expect(failures).toEqual([])
 })

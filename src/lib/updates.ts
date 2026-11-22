@@ -18,8 +18,14 @@ interface UpdateState {
 
 export const useUpdate = create<UpdateState>((set) => ({ ready: false, apply: () => {}, later: () => set({ ready: false }) }))
 
-/** Reloading closes whatever is open, so it is only done unasked when nothing is. */
-export const canReloadUnasked = (pageCount: number) => pageCount === 0
+/**
+ * Reloading closes whatever is open, so it is only done unasked when nothing is. No pages on screen is not enough:
+ * pages that were all deleted can still be brought back with Undo, and that history, along with the files behind it,
+ * is gone after a reload. Work in progress counts too.
+ */
+export const holdsWork = (s: { pages: unknown[]; past: unknown[]; future: unknown[]; busy: string | null }) =>
+  s.pages.length > 0 || s.past.length > 0 || s.future.length > 0 || s.busy !== null
+export const canReloadUnasked = (s: Parameters<typeof holdsWork>[0]) => !holdsWork(s)
 
 /** How often a tab left open is asked whether there is a newer version. */
 export const CHECK_EVERY_MS = 30 * 60_000
@@ -40,11 +46,28 @@ export function startUpdates(register: typeof registerSW = registerSW) {
     )
     void reload(true)
   }
+  // A new version that has been found but not yet taken. "Later" only hides the bar; it stays waiting, and is
+  // looked at again whenever the files change: reloaded as soon as nothing is left to lose, or offered again once
+  // every page has been closed (what remains is only Undo history, which is the person's call).
+  let waiting = false
+  const unwatch = useStore.subscribe((s) => {
+    if (!waiting) return
+    if (canReloadUnasked(s)) {
+      waiting = false
+      unwatch()
+      take()
+    } else if (s.pages.length === 0 && !useUpdate.getState().ready && s.busy === null) {
+      useUpdate.setState({ ready: true })
+    }
+  })
   const reload = register({
     immediate: true,
     onNeedRefresh() {
-      if (canReloadUnasked(useStore.getState().pages.length)) take()
-      else useUpdate.setState({ ready: true })
+      if (canReloadUnasked(useStore.getState())) take()
+      else {
+        waiting = true
+        useUpdate.setState({ ready: true })
+      }
     },
     onRegisteredSW(_url, registration) {
       if (!registration) return
@@ -57,4 +80,5 @@ export function startUpdates(register: typeof registerSW = registerSW) {
     },
   })
   useUpdate.setState({ apply: take })
+  return unwatch
 }
