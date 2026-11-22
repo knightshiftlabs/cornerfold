@@ -20,6 +20,13 @@ Helpful things to include:
 Please give us a reasonable chance to fix the problem before disclosing it publicly. We'll keep
 you updated, and we're glad to credit you once it's fixed, if you'd like.
 
+## No paid bounty
+
+Cornerfold is a free, independent project and does not run a paid bug bounty. We can't pay for
+reports, but we do take them seriously, fix real problems quickly, and offer public credit. Emails
+that ask us to join a bounty platform, or that offer paid "security services", are not reports; real
+ones go through the private channels above.
+
 ## Supported versions
 
 Only the latest version is supported. Cornerfold is a website, so everyone using

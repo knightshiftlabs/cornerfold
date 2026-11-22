@@ -1,6 +1,7 @@
 // Making a signature picture: drawn, typed or from a photo. Each becomes a PNG cropped to the ink, with a
 // see-through background, ready to place on a page. Everything happens here in the browser.
 import type { MarkImage } from './marks'
+import { ImageTooLargeError, MAX_SIGNATURE_PHOTO_BYTES, MAX_SIGNATURE_PHOTO_PIXELS, UNKNOWN_PICTURE_PIXELS, admit, decodeBudget } from './imageLimits'
 import { newId } from './store'
 
 /** Shown wherever a signature is made or placed. */
@@ -67,14 +68,24 @@ export async function typedSignature(name: string): Promise<MarkImage | null> {
  * The paper's shade is taken from the photo's edges, so off-white and shadowed paper work too.
  */
 export async function photoSignature(file: Blob): Promise<MarkImage | null> {
+  // A signature is used at 1,600 pixels, so a photo much bigger than any phone takes is refused before it is decoded.
+  if (file.size > MAX_SIGNATURE_PHOTO_BYTES) throw new ImageTooLargeError(file.size, MAX_SIGNATURE_PHOTO_BYTES)
+  const pixels = admit(new Uint8Array(await file.arrayBuffer()), MAX_SIGNATURE_PHOTO_PIXELS) ?? UNKNOWN_PICTURE_PIXELS
+  return decodeBudget.use(pixels, () => photoToInk(file))
+}
+
+async function photoToInk(file: Blob): Promise<MarkImage | null> {
   const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' })
-  const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height))
   const canvas = document.createElement('canvas')
-  canvas.width = Math.round(bmp.width * scale)
-  canvas.height = Math.round(bmp.height * scale)
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-  ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height)
-  bmp.close()
+  try {
+    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height))
+    canvas.width = Math.round(bmp.width * scale)
+    canvas.height = Math.round(bmp.height * scale)
+    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height)
+  } finally {
+    bmp.close() // whether or not drawing worked
+  }
   const img = ctx.getImageData(0, 0, canvas.width, canvas.height)
   const d = img.data
   const light = (i: number) => d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114

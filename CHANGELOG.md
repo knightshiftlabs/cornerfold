@@ -8,6 +8,14 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+### Fixed
+- A picture or signature photo with an enormous pixel size (a "decompression bomb") could freeze or crash the tab. Cornerfold now reads the size from the file's header and refuses a picture over 150 megapixels with a clear message, before decoding it, and keeps the total being decoded at once within a safe limit. Other files added with it are still added.
+- Signature photos are limited to 60 megapixels and 40 MB, with a plain message if one is too large.
+- Saving many pages as images, or splitting into many parts, could run the browser out of memory while building the ZIP. Cornerfold now estimates the total as it goes and stops early with advice (fewer pages, lower detail, larger parts) instead of failing at the end.
+
+### Security
+- SECURITY.md now states that Cornerfold has no paid bug bounty, and that credit is offered instead.
+
 ## [1.6.0] - 2026-11-23
 
 ### Added

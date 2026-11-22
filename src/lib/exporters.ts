@@ -2,6 +2,7 @@
 import { zipSync } from 'fflate'
 import { baseName, download, message, targets } from './actions'
 import { runJob } from './engine'
+import { checkZipBudget } from './exportBudget'
 import { pageText, renderPageImage } from './pdf'
 import { useStore } from './store'
 import { combineText } from './text'
@@ -18,11 +19,14 @@ export async function saveImages(format: 'jpg' | 'png', dpi: number) {
   const base = baseName(list)
   const type = format === 'jpg' ? 'image/jpeg' : 'image/png'
   const files: Record<string, Uint8Array> = {}
+  let made = 0
   try {
     for (let i = 0; i < list.length; i++) {
       st.setBusy(`Saving page ${i + 1} of ${list.length}`)
       const p = list[i]
       files[`${base}-page-${pad(i + 1, list.length)}.${format}`] = await renderPageImage(st.sources[p.sourceId], p.index, p.rotation, dpi, type)
+      made += files[Object.keys(files).at(-1)!].length
+      checkZipBudget(i + 1, list.length, made, 'Save fewer pages at a time, or choose a lower detail.')
     }
     const names = Object.keys(files)
     if (names.length === 1) {

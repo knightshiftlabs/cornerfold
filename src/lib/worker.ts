@@ -7,6 +7,7 @@ import { drawMarks, markContext } from './markDraw'
 import type { FieldValue, Mark, MarkImage } from './marks'
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFObjectCopier, PDFRef, PDFString, degrees, type PDFImage, type PDFPage, PDFTextField, PDFCheckBox, PDFRadioGroup, PDFDropdown, PDFOptionList } from '@cantoo/pdf-lib'
 import { zipSync } from 'fflate'
+import { checkZipBudget } from './exportBudget'
 import { Compressor, PRESETS, budgetsFor, type Codec } from './compress'
 
 interface WorkerSource {
@@ -383,9 +384,14 @@ self.onmessage = async (e: MessageEvent) => {
       const single = groups.every((g) => g.length === 1)
       const width = Math.max(2, String(groups.length).length)
       const entries: Record<string, Uint8Array> = {}
+      let made = 0
       for (let i = 0; i < groups.length; i++) {
         const label = `${single ? 'p' : 'part-'}${String(i + 1).padStart(width, '0')}`
-        entries[`${name}-${label}.pdf`] = await build(groups[i].map((ix) => pages[ix]), recipe)
+        const part = await build(groups[i].map((ix) => pages[ix]), recipe)
+        entries[`${name}-${label}.pdf`] = part
+        made += part.length
+        // Stop as soon as it is clear the ZIP will not fit in memory, not after all the parts are built.
+        checkZipBudget(i + 1, groups.length, made, 'Split into fewer, larger parts, or compress the file first.')
       }
       // PDFs are already compressed; store them as-is for speed.
       files = [{ name: `${name}-${single ? 'pages' : 'parts'}.zip`, bytes: zipSync(entries, { level: 0 }) }]

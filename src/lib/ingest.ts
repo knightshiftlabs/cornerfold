@@ -6,6 +6,7 @@ import { stage } from './motion'
 import { getWorker, unlockInWorker } from './engine'
 import { askRestricted, questionsFor } from './passwords'
 import { stripJpegMetadata } from './jpeg'
+import { ImageTooLargeError, UNKNOWN_PICTURE_PIXELS, admit, decodeBudget } from './imageLimits'
 
 const uid = () => crypto.randomUUID()
 const isPdf = (f: File) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name)
@@ -116,7 +117,8 @@ async function readFile(f: File): Promise<{ source: Source; pages: Page[]; signe
   let img
   try {
     img = await normalizeImage(f)
-  } catch {
+  } catch (e) {
+    if (e instanceof ImageTooLargeError) throw e
     throw new UnsupportedImageError(isHeic(f))
   }
   return {
@@ -157,6 +159,7 @@ async function unlockFile(name: string, bytes: Uint8Array): Promise<Uint8Array> 
 
 function describe(f: File, e: unknown) {
   if (e instanceof EmptyError) return `${f.name} is empty.`
+  if (e instanceof ImageTooLargeError) return `${f.name} is ${Math.round(e.pixels / 1e6)} megapixels, more than Cornerfold can open safely here (the limit is ${Math.round(e.limit / 1e6)}). Make it smaller first and add it again.`
   if (e instanceof UnsupportedProtectionError) return `${f.name} uses a kind of protection Cornerfold can’t open, such as one that needs a certificate.`
   if (e instanceof UnsupportedImageError)
     return e.heic
@@ -189,6 +192,13 @@ function hasTransparency(bmp: ImageBitmap) {
 
 async function normalizeImage(f: File) {
   const buf = await f.arrayBuffer()
+  // The size is in the file's header, so a picture that claims to be enormous is refused before anything is decoded,
+  // and the ones that are let through take turns, so only a few million pixels are being decoded at any moment.
+  const pixels = admit(new Uint8Array(buf)) ?? UNKNOWN_PICTURE_PIXELS
+  return decodeBudget.use(pixels, () => decodeImage(f, buf))
+}
+
+async function decodeImage(f: File, buf: ArrayBuffer) {
   const jpeg = f.type === 'image/jpeg'
   const png = f.type === 'image/png'
   const cleaned = jpeg ? stripJpegMetadata(new Uint8Array(buf)) : null
@@ -201,19 +211,23 @@ async function normalizeImage(f: File) {
   }
 
   const bmp = await createImageBitmap(new Blob([buf], { type: f.type }), { imageOrientation: 'from-image' })
-  // Other formats (WebP, AVIF, GIF, BMP) become JPEG, as a photo saved as PNG would be many times larger,
-  // unless they have see-through parts, which only PNG keeps. An animated GIF gives its first frame.
-  const keepAlpha = !jpeg && hasTransparency(bmp)
   const canvas = document.createElement('canvas')
-  canvas.width = bmp.width
-  canvas.height = bmp.height
-  const ctx = canvas.getContext('2d')!
-  if (!keepAlpha) {
-    ctx.fillStyle = '#fff' // anything faintly see-through sits on white paper, not black
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+  let keepAlpha = false
+  try {
+    // Other formats (WebP, AVIF, GIF, BMP) become JPEG, as a photo saved as PNG would be many times larger,
+    // unless they have see-through parts, which only PNG keeps. An animated GIF gives its first frame.
+    keepAlpha = !jpeg && hasTransparency(bmp)
+    canvas.width = bmp.width
+    canvas.height = bmp.height
+    const ctx = canvas.getContext('2d')!
+    if (!keepAlpha) {
+      ctx.fillStyle = '#fff' // anything faintly see-through sits on white paper, not black
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+    }
+    ctx.drawImage(bmp, 0, 0)
+  } finally {
+    bmp.close() // whether or not drawing worked
   }
-  ctx.drawImage(bmp, 0, 0)
-  bmp.close()
   const mime = keepAlpha ? 'image/png' : 'image/jpeg'
   const blob = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('Encode failed'))), mime, 0.92))
   return { bytes: new Uint8Array(await blob.arrayBuffer()), mime: mime as 'image/png' | 'image/jpeg', width: canvas.width, height: canvas.height }

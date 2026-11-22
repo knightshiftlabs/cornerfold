@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import type { MarkImage } from '../../lib/marks'
+import { ImageTooLargeError } from '../../lib/imageLimits'
 import { SIGNATURE_NOTE, inkToImage, loadSignatureFont, photoSignature, typedSignature } from '../../lib/signature'
 import { unsupportedCharacters } from '../../lib/stampText'
 import { Button, Sheet } from '../ui'
@@ -156,7 +157,13 @@ export function SignatureMaker({ onClose, onMade }: { onClose: () => void; onMad
                   const file = e.currentTarget.files?.[0]
                   if (!file) return
                   setBusy(true)
-                  setPhoto(await photoSignature(file).catch(() => null))
+                  setProblem(null)
+                  setPhoto(
+                    await photoSignature(file).catch((err) => {
+                      if (err instanceof ImageTooLargeError) setProblem('That photo is too large to use safely. A photo taken at your phone’s normal camera setting is fine; try a smaller one.')
+                      return null
+                    }),
+                  )
                   setBusy(false)
                 }}
               />
