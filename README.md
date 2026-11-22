@@ -8,6 +8,10 @@ Live at https://cornerfold.org
 
 **Pillars:** private (files never leave the device), a UI people enjoy, no ads.
 
+## About this project
+
+Cornerfold is AI-coded. Most of the code, tests and documentation were written by Claude (Anthropic's AI model) working with KnightShift Labs, who set the requirements, review the changes, run the checks and make the releases. It has an automated test suite and checks on the live site (see below), but it has not had an independent security audit and it comes with no warranty (see the licence). Read the code and run the checks yourself before relying on it for anything important. Where this repository says a guarantee is "enforced", it means a named automated test or header does so, not that the code is proven correct.
+
 ## Run it
 
 ```bash

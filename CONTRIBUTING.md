@@ -11,6 +11,10 @@ people use one over a network, you must offer them its source under the same lic
 A different, commercial licence for uses that do not fit the AGPL can be arranged. Write to
 [hello@cornerfold.org](mailto:hello@cornerfold.org).
 
+## AI-written code
+
+Most of Cornerfold is written by an AI model (Claude) and reviewed by KnightShift Labs. Contributions written with AI help are welcome too; say so in the pull request and make sure you understand and can license what you send.
+
 ## Code you send in
 
 To keep that option open, the copyright holder needs the right to license contributed code both ways. So by

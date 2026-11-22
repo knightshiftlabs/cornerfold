@@ -32,7 +32,7 @@
   <p><strong>Check it yourself.</strong> View the source of any page. Every script and style comes from cornerfold.org.</p>
 
   <h2>The site runs exactly the public source code</h2>
-  <p><strong>How it’s kept.</strong> The source code is <a href="https://github.com/knightshiftlabs/cornerfold">public on GitHub</a>, and building it always produces the same files, byte for byte.</p>
+  <p><strong>How it’s kept.</strong> The source code is <a href="https://github.com/knightshiftlabs/cornerfold">public on GitHub</a>, and building it with the same tool versions produces the same files, byte for byte.</p>
   <p><strong>How it’s tested.</strong> The same daily check builds the code on GitHub and compares every file with the one cornerfold.org serves. Any difference, whether a file is changed or added, fails the check.</p>
   <p><strong>Check it yourself.</strong> With Node.js installed, download the code and run <code>npm ci</code>, <code>npm run build</code> and <code>npm run check:live</code>.</p>
 
@@ -63,6 +63,9 @@
 
   <h2>If any of this is ever untrue</h2>
   <p>That would be a serious bug. Please tell us at <a href="mailto:security@cornerfold.org">security@cornerfold.org</a>.</p>
+
+  <h2>What these checks do not cover</h2>
+  <p>Cornerfold is AI-coded: most of its code is written by Claude, an AI model from Anthropic, and reviewed and released by KnightShift Labs. The checks above show that the site runs the public source and that it makes no requests carrying your files. They are not an independent security audit, they cannot find every kind of bug, and the app may produce exports that are not exactly what you expected. Check important files before you rely on them.</p>
 
   <footer>
     <a href="/">Cornerfold</a>
