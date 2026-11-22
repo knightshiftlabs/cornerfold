@@ -13,11 +13,13 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { RotateCcw, RotateCw, Trash2, Maximize2 } from 'lucide-react'
+import { Check, RotateCcw, RotateCw, Trash2, Maximize2 } from 'lucide-react'
 import { useStore, type Page } from '../lib/store'
 import { getThumb, peekThumb } from '../lib/pdf'
 import { entering } from '../lib/motion'
 import { deletePages } from '../lib/actions'
+import { motionScale, usePrefs } from '../lib/prefs'
+import { tick } from '../lib/sound'
 
 
 // What a screen reader says while a page is moved with the keyboard. The library's own wording names each item
@@ -66,7 +68,7 @@ export function PageGrid() {
   const clearOnBackground = (e: MouseEvent) => e.target === e.currentTarget && deselect()
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] px-3 pb-28 pt-5 sm:px-8" onClick={clearOnBackground}>
+    <div className="min-h-[calc(100dvh-5rem)] px-3 pb-28 pt-5 sm:px-8" onClick={clearOnBackground}>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -74,13 +76,16 @@ export function PageGrid() {
         onDragStart={(e) => setActiveId(String(e.active.id))}
         onDragEnd={(e) => {
           setActiveId(null)
-          if (e.over) reorder(String(e.active.id), String(e.over.id))
+          if (e.over) {
+            reorder(String(e.active.id), String(e.over.id))
+            if (usePrefs.getState().look.sound) tick()
+          }
         }}
         onDragCancel={() => setActiveId(null)}
       >
         <SortableContext items={ids} strategy={rectSortingStrategy}>
           <ol
-            className="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] gap-x-3 gap-y-4 sm:grid-cols-[repeat(auto-fill,minmax(176px,1fr))] sm:gap-x-5"
+            className="grid grid-cols-[repeat(auto-fill,minmax(calc(96px+var(--size)*1.4px),1fr))] gap-x-[var(--gap-x)] gap-y-[var(--gap-y)] sm:grid-cols-[repeat(auto-fill,minmax(calc(120px+var(--size)*1.5px),1fr))]"
             onClick={clearOnBackground}
           >
             {pages.map((p, i) => (
@@ -88,7 +93,7 @@ export function PageGrid() {
             ))}
           </ol>
         </SortableContext>
-        <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' }}>
+        <DragOverlay dropAnimation={{ duration: Math.round(200 * motionScale()), easing: 'cubic-bezier(.2,.8,.2,1)' }}>
           {activeIndex >= 0 ? <CardFace page={pages[activeIndex]} number={activeIndex + 1} lifted /> : null}
         </DragOverlay>
       </DndContext>
@@ -124,7 +129,7 @@ const SortablePage = memo(function SortablePage({ page, number }: { page: Page; 
       aria-label={`Page ${number}`}
       aria-pressed={selected}
       onClick={(e) => select(page.id, e.shiftKey ? 'range' : 'toggle')}
-      className="group relative cursor-grab touch-manipulation rounded-[14px] outline-none focus-visible:ring-2 focus-visible:ring-ink"
+      className="group relative cursor-grab touch-manipulation rounded-[var(--r-card)] outline-none focus-visible:ring-2 focus-visible:ring-ink"
     >
       <div className={enter ? 'sheet-enter' : undefined} style={enterStyle}>
         <CardFace page={page} number={number} selected={selected} />
@@ -157,7 +162,7 @@ function CardAction({ label, onClick, children }: { label: string; onClick: (e: 
       title={label}
       onClick={onClick}
       onPointerDown={(e) => e.stopPropagation()}
-      className="grid size-8 place-items-center rounded-full bg-white/95 text-[#1d2532] shadow-[0_1px_3px_rgb(16_24_40/0.25)] hover:bg-white active:scale-90 transition-transform [&_svg]:size-4"
+      className="grid size-8 place-items-center rounded-full bg-white/95 text-[#1d2532] shadow-[0_1px_3px_rgb(16_24_40/0.25),inset_0_1px_0_#fff] hover:bg-white active:scale-90 transition-transform [&_svg]:size-4"
     >
       {children}
     </button>
@@ -171,6 +176,11 @@ function CardFace({ page, number, selected, lifted }: { page: Page; number: numb
       <div className="sheet-box">
         <Thumb page={page} />
       </div>
+      {selected && (
+        <span className="sel-badge" aria-hidden="true">
+          <Check strokeWidth={3} />
+        </span>
+      )}
       <div className="mt-2.5 flex min-w-0 items-baseline gap-2 px-0.5">
         <span className="font-semibold tabular-nums">{number}</span>
         <span className="card-src truncate text-xs text-muted">

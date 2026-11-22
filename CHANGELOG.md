@@ -8,6 +8,24 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.5.0] - TBD
+
+### Added
+- Appearance, a new panel with over a dozen choices: Light, Dark, Midnight (true black), Paper, or follow your device; seven accent colours; four desks (Graphite, Slate, Linen, Felt); bright, soft or warm paper; flat, soft or lifted page shadows; how chosen pages look (a folded corner, a tick or a ring); sharp, soft or round corners; compact, calm or airy spacing; how frosted the panels are; page size; text size; calm or no animation; higher contrast; keyboard hints; and an optional soft tick when a page lands.
+- A page-size slider and keyboard reminders in a floating bar at the bottom of the screen.
+
+### Changed
+- A new look throughout. The toolbar floats over the pages as frosted glass, pages are sheets with layered shadows, buttons and switches have a physical feel, and menus show a coloured icon for each tool. Dark is now designed first and light is its equal.
+- Chosen pages now show a folded corner, the Cornerfold mark, instead of turning yellow.
+- The text is now your device's own system font where it has one, which on Apple devices is San Francisco.
+
+### Notes
+- Your choices are saved in your browser's storage on your device, and only when they differ from the defaults. They hold nothing about you or your files and are never sent anywhere. If you never open Appearance, nothing is stored.
+- Text, buttons and controls meet WCAG AA contrast in every theme and accent colour, checked by an automatic test in each combination.
+
+### Fixed
+- The saved theme is applied before the page is drawn, so reloading never flashes the wrong one.
+
 ## [1.4.0] - 2026-11-13
 
 ### Added

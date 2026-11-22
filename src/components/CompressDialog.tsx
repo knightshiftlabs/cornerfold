@@ -87,7 +87,7 @@ function Panel() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgb(16_24_40/0.45)] backdrop-blur-[2px] sm:items-center sm:p-6" onClick={close}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-scrim backdrop-blur-[3px] sm:items-center sm:p-6" onClick={close}>
       <div
         ref={panel}
         tabIndex={-1}
@@ -95,7 +95,7 @@ function Panel() {
         aria-modal="true"
         aria-labelledby="compress-title"
         onClick={(e) => e.stopPropagation()}
-        className="toast-in-up max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-line bg-desk p-5 shadow-[0_24px_60px_-12px_rgb(16_24_40/0.5)] outline-none sm:rounded-3xl sm:p-7"
+        className="toast-in-up max-h-[92dvh] w-full max-w-lg overflow-y-auto glass rounded-t-[var(--r-panel)] p-5 outline-none sm:rounded-[var(--r-panel)] sm:p-7"
       >
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
@@ -142,7 +142,7 @@ function Panel() {
                 type="button"
                 onClick={() => fitUnder(kb)}
                 className={`h-9 rounded-full border px-3.5 text-sm font-medium tabular-nums transition-colors active:scale-95 ${
-                  limitKb === kb ? 'border-transparent bg-hi text-[#1d2532]' : 'border-line hover:bg-desk-2'
+                  limitKb === kb ? 'border-transparent bg-ink text-white' : 'border-line hover:bg-desk-2'
                 }`}
               >
                 {formatBytes(kb * 1024)}
@@ -167,7 +167,7 @@ function Panel() {
                 aria-describedby={customError ? 'size-error' : undefined}
                 className="w-24 bg-transparent text-sm outline-none placeholder:text-muted"
               />
-              <button type="submit" className="h-7 rounded-full px-2.5 text-sm font-semibold text-ink hover:bg-desk-2">
+              <button type="submit" className="h-7 rounded-full px-2.5 text-sm font-semibold text-link hover:bg-desk-2">
                 Fit
               </button>
             </form>
@@ -215,11 +215,11 @@ function Option(props: {
       aria-checked={selected}
       onClick={onSelect}
       className={`flex w-full items-center gap-4 rounded-2xl border px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
-        selected ? 'border-transparent bg-hi text-[#1d2532]' : 'border-line hover:bg-desk-2'
+        selected ? 'border-transparent bg-ink text-white' : 'border-line hover:bg-desk-2'
       }`}
     >
       <span
-        className={`grid size-5 shrink-0 place-items-center rounded-full border-2 ${selected ? 'border-[#1d2532] bg-[#1d2532] text-hi' : 'border-muted'}`}
+        className={`grid size-5 shrink-0 place-items-center rounded-full border-2 ${selected ? 'border-white bg-white text-ink' : 'border-muted'}`}
         aria-hidden="true"
       >
         {selected && <Check className="size-3" strokeWidth={3.5} />}

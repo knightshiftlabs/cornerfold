@@ -141,17 +141,37 @@ test.describe('Fill and sign on a phone', () => {
     await expect(editor.getByRole('img', { name: /^Page \d$/ })).toBeVisible({ timeout: 20_000 })
     await editor.getByRole('button', { name: 'Signature', exact: true }).tap()
     const pad = page.getByLabel('Draw your signature here')
+    await expect(pad).toBeVisible()
+    // The sheet slides in; measure the pad only once it has stopped moving, or the strokes land beside it.
+    await pad.evaluate((el) => Promise.all(el.closest('[role="dialog"]')!.getAnimations({ subtree: true }).map((a) => a.finished)))
     const b = (await pad.boundingBox())!
     expect(b.x).toBeGreaterThanOrEqual(0)
     expect(b.x + b.width).toBeLessThanOrEqual(page.viewportSize()!.width)
-    // A finger stroke, as touch pointer events.
+    // A finger stroke, as touch events. Playwright's own touchscreen can only tap, so the stroke goes through a
+    // debugging session of its own, which is closed again straight after: while it is open, Chrome stops turning
+    // later taps into clicks (a quirk of the harness, not of the app; it cost a day to find).
     const cdp = await page.context().newCDPSession(page)
     const touch = (type: string, x: number, y: number) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] })
     await touch('touchStart', b.x + 20, b.y + b.height / 2)
     for (let i = 1; i <= 12; i++) await touch('touchMove', b.x + 20 + i * 20, b.y + b.height / 2 + (i % 2 ? 15 : -15))
     await touch('touchEnd', 0, 0)
+    await cdp.detach()
     await expect(page.getByRole('button', { name: 'Use this signature' })).toBeEnabled()
+    // The stroke really is ink across the pad, not just a dot where the finger landed.
+    const inked = await pad.evaluate((c: HTMLCanvasElement) => {
+      const d = c.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, c.width, c.height).data
+      const columns = new Set<number>()
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 24) columns.add(((i >> 2) % c.width) >> 4)
+      return columns.size
+    })
+    expect(inked).toBeGreaterThan(8)
     await page.getByRole('button', { name: 'Use this signature' }).tap()
-    await expect(editor.getByRole('button', { name: /^Signature\./ })).toBeVisible()
+    // If the signature doesn't appear, say what the app said, so a failure explains itself.
+    const placed = editor.getByRole('button', { name: /^Signature\./ })
+    const outcome = await Promise.race([
+      placed.waitFor({ timeout: 10_000 }).then(() => 'placed'),
+      page.getByRole('alert').waitFor({ timeout: 10_000 }).then(async () => `the app said: ${await page.getByRole('alert').innerText()}`),
+    ]).catch(async () => `nothing happened; the sheet is ${(await page.getByRole('button', { name: 'Use this signature' }).count()) ? 'still open' : 'closed'}`)
+    expect(outcome).toBe('placed')
   })
 })

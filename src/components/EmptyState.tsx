@@ -24,7 +24,7 @@ export function EmptyState() {
               const I = Icon as typeof CloudOff
               return (
                 <li key={label as string} className="inline-flex items-center gap-2">
-                  <I className="size-[18px] text-ink" aria-hidden="true" />
+                  <I className="size-[18px] text-link" aria-hidden="true" />
                   {label as string}
                 </li>
               )

@@ -5,9 +5,9 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | '
 
 export function Button({ variant = 'ghost', size = 'md', className = '', ...rest }: Props) {
   const base =
-    'inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold rounded-full select-none transition-[background-color,transform] duration-100 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink [&_svg]:size-[1.1em] [&_svg]:shrink-0'
-  const sizes = size === 'lg' ? 'h-14 px-7 text-lg' : 'h-10 px-4 text-[0.95rem]'
-  const look = variant === 'primary' ? 'bg-ink text-white hover:bg-ink-press' : 'text-fg hover:bg-desk-2'
+    'inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold rounded-[var(--r-ctl)] select-none transition-[background-color,transform,filter] duration-100 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink [&_svg]:size-[1.1em] [&_svg]:shrink-0'
+  const sizes = size === 'lg' ? 'h-14 px-7 text-lg' : 'h-9 px-3.5 text-[0.9rem]'
+  const look = variant === 'primary' ? 'btn-primary' : 'btn-ghost text-fg'
   return <button type="button" className={`${base} ${sizes} ${look} ${className}`} {...rest} />
 }
 
@@ -17,7 +17,7 @@ export function IconButton({ label, children, className = '', ...rest }: ButtonH
       type="button"
       aria-label={label}
       title={label}
-      className={`grid place-items-center size-10 rounded-full text-fg hover:bg-desk-2 active:scale-[0.94] transition-[background-color,transform] duration-100 disabled:opacity-35 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink [&_svg]:size-[18px] ${className}`}
+      className={`grid place-items-center size-9 rounded-[var(--r-ctl)] text-fg hover:bg-fg/10 active:scale-[0.94] transition-[background-color,transform] duration-100 disabled:opacity-35 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink [&_svg]:size-[18px] ${className}`}
       {...rest}
     >
       {children}
@@ -43,7 +43,7 @@ export function Wordmark({ compact = false }: { compact?: boolean }) {
  * The shell every tool panel shares: a dialog that takes focus when it opens, keeps Tab inside it, and
  * closes with Escape, its close button, or a click outside. On phones it rises from the bottom.
  */
-export function Sheet({ title, intro, onClose, children, footer }: { title: string; intro?: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+export function Sheet({ title, intro, onClose, children, footer, wide }: { title: string; intro?: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
   const panel = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     const el = panel.current!
@@ -63,7 +63,7 @@ export function Sheet({ title, intro, onClose, children, footer }: { title: stri
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgb(16_24_40/0.45)] backdrop-blur-[2px] sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-scrim backdrop-blur-[3px] sm:items-center sm:p-6"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -72,7 +72,7 @@ export function Sheet({ title, intro, onClose, children, footer }: { title: stri
         role="dialog"
         aria-modal="true"
         aria-labelledby="sheet-title"
-        className="toast-in-up max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-line bg-desk p-5 shadow-[0_24px_60px_-12px_rgb(16_24_40/0.5)] outline-none sm:rounded-3xl sm:p-7"
+        className={`toast-in-up glass max-h-[92dvh] w-full overflow-y-auto rounded-t-[var(--r-panel)] p-5 outline-none sm:rounded-[var(--r-panel)] sm:p-7 ${wide ? 'max-w-4xl' : 'max-w-lg'}`}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

@@ -6,6 +6,9 @@ import App from './App'
 import { loadPdfEngine, releaseSource } from './lib/pdf'
 import { forgetSources, getWorker } from './lib/engine'
 import { onRelease, useStore } from './lib/store'
+import { startPrefs } from './lib/prefs'
+
+startPrefs()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

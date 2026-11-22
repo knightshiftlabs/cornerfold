@@ -30,6 +30,9 @@ test('a page can be moved with the keyboard alone, with each step announced in p
   await app.card(1).focus()
   await page.keyboard.press('Space')
   await expect(said).toHaveText('Picked up page 1 of 4. Use the arrow keys to move it, Space to drop it, or Escape to cancel.')
+  // The drag library starts listening for the arrow keys a moment after the pickup is announced, so a key
+  // pressed within a few milliseconds is lost. No person presses that fast; GitHub's machines do.
+  await page.waitForTimeout(150)
   await page.keyboard.press('ArrowRight')
   await expect(said).toHaveText('Page 1 is over position 2.')
   await page.keyboard.press('Space')
@@ -42,6 +45,7 @@ test('Escape cancels a keyboard move and says so', async ({ page, app }) => {
   await app.card(2).focus()
   await page.keyboard.press('Space')
   await expect(said).toContainText('Picked up page 2 of 4.')
+  await page.waitForTimeout(150)
   await page.keyboard.press('ArrowRight')
   await expect(said).toHaveText('Page 2 is over position 3.')
   await page.keyboard.press('Escape')

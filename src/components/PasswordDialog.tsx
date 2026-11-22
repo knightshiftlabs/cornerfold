@@ -38,7 +38,7 @@ function Panel({ prompt }: { prompt: Prompt }) {
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgb(16_24_40/0.45)] backdrop-blur-[2px] sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-scrim backdrop-blur-[3px] sm:items-center sm:p-6">
       <div
         ref={panel}
         tabIndex={-1}
@@ -47,10 +47,10 @@ function Panel({ prompt }: { prompt: Prompt }) {
         aria-labelledby="lock-title"
         aria-describedby="lock-body"
         aria-busy={busy}
-        className="toast-in-up w-full max-w-md rounded-t-3xl border border-line bg-desk p-5 shadow-[0_24px_60px_-12px_rgb(16_24_40/0.5)] outline-none sm:rounded-3xl sm:p-7"
+        className="toast-in-up w-full max-w-md glass rounded-t-[var(--r-panel)] p-5 outline-none sm:rounded-[var(--r-panel)] sm:p-7"
       >
         <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-desk-2 text-ink">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-desk-2 text-link">
             <Lock className="size-5" aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">

@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from 'react'
 import { createPortal } from 'react-dom'
 import { splitPages } from '../lib/actions'
-import { ArrowDownUp, CopyPlus, Droplets, FilePlus2, FileText, FlipVertical2, Hash, Images, ListChecks, Ruler, ScanSearch, Scissors, Shrink, Signature, SquareSplitHorizontal, Wrench } from 'lucide-react'
+import { ArrowDownUp, Palette, CopyPlus, Droplets, FilePlus2, FileText, FlipVertical2, Hash, Images, ListChecks, Ruler, ScanSearch, Scissors, Shrink, Signature, SquareSplitHorizontal, Wrench } from 'lucide-react'
 import { describePaper } from '../lib/paper'
 import { duplicateSelected, insertBlankPage, reverseOrder, selectBlankPages } from '../lib/pageTools'
 import { useStore } from '../lib/store'
+import { usePrefs } from '../lib/prefs'
 import { Button } from './ui'
 
 interface Item {
@@ -36,6 +37,11 @@ export function ToolsMenu() {
       name: 'Make smaller',
       phoneOnly: true,
       items: [{ icon: Shrink, label: 'Compress…', disabled: busy, phoneOnly: true, run: () => useStore.getState().setCompressOpen(true) }],
+    },
+    {
+      name: 'Appearance',
+      phoneOnly: true,
+      items: [{ icon: Palette, label: 'Appearance…', hint: 'Theme, accent and more', phoneOnly: true, run: () => usePrefs.getState().setOpen(true) }],
     },
     {
       name: 'Sign',
@@ -142,6 +148,8 @@ export function ToolsMenu() {
     },
   ]
 
+  const TILE: Record<string, string> = { 'Make smaller': '#2fa98a', Appearance: '#8e5cf0', Sign: '#5b6cff', Select: '#7b8296', Pages: '#d98a0b', Photos: '#e0587a', Split: '#7a6ae0', 'Save as': '#23a36f', Stamp: '#d9701f' }
+
   const close = (refocus = true) => {
     setOpen(false)
     if (refocus) root.current?.querySelector<HTMLElement>('[aria-haspopup="menu"]')?.focus()
@@ -194,13 +202,13 @@ export function ToolsMenu() {
         // otherwise become the frame that "fixed" is measured from, and on phones the menu would open off screen.
         createPortal(
           <>
-            <div className="fixed inset-0 z-50 bg-[rgb(16_24_40/0.35)] sm:hidden" aria-hidden="true" />
+            <div className="fixed inset-0 z-50 bg-scrim sm:hidden" aria-hidden="true" />
             <div
               ref={panel}
               role="menu"
               aria-label="Tools"
               style={anchor && window.matchMedia('(min-width: 640px)').matches ? { top: anchor.top, right: anchor.right } : undefined}
-              className="toast-in-up fixed inset-x-2 bottom-2 z-50 max-h-[80dvh] overflow-y-auto rounded-3xl border border-line bg-desk p-2 shadow-[0_24px_60px_-12px_rgb(16_24_40/0.5)] sm:inset-x-auto sm:bottom-auto sm:max-h-[calc(100dvh-6rem)] sm:w-80"
+              className="pop-in fixed inset-x-2 bottom-2 z-50 max-h-[80dvh] overflow-y-auto glass rounded-[var(--r-panel)] p-2 sm:inset-x-auto sm:bottom-auto sm:max-h-[calc(100dvh-6rem)] sm:w-80"
             >
               {groups.map((group) => (
                 <div key={group.name} role="group" aria-label={group.name} className={`py-1 ${group.phoneOnly ? 'sm:hidden' : ''}`}>
@@ -215,13 +223,15 @@ export function ToolsMenu() {
                         close(false)
                         item.run()
                       }}
-                      className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left outline-none hover:bg-desk-2 focus-visible:bg-desk-2 disabled:opacity-45 ${item.phoneOnly ? 'sm:hidden' : ''}`}
+                      className={`group flex w-full items-center gap-3 rounded-[var(--r-ctl)] px-2.5 py-2 text-left outline-none hover:bg-ink hover:text-white focus-visible:bg-ink focus-visible:text-white disabled:opacity-45 disabled:hover:bg-transparent disabled:hover:text-inherit ${item.phoneOnly ? 'sm:hidden' : ''}`}
                   data-phone-only={item.phoneOnly || undefined}
                     >
-                      <item.icon className="size-5 shrink-0" />
+                      <span className="tile" style={{ background: `linear-gradient(180deg, color-mix(in srgb, ${TILE[group.name]} 80%, #fff), ${TILE[group.name]})` }} aria-hidden="true">
+                        <item.icon className="size-[15px]" />
+                      </span>
                       <span className="min-w-0 flex-1">
                         <span className="block font-semibold">{item.label}</span>
-                        {item.hint && <span className="block text-xs text-muted">{item.hint}</span>}
+                        {item.hint && <span className="block text-xs text-muted group-hover:text-white group-focus-visible:text-white">{item.hint}</span>}
                       </span>
                     </button>
                   ))}

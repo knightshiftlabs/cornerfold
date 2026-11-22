@@ -44,16 +44,16 @@ export function PrivacyBadge() {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-label={`${label}. About your privacy`}
-        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-line px-2.5 text-[0.8rem] font-semibold text-fg hover:bg-desk-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        className="btn-ghost inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[0.8rem] font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
       >
-        <Icon className="size-4 text-ink" aria-hidden="true" />
+        <Icon className="size-4 text-link" aria-hidden="true" />
         <span className="hidden sm:inline">{label}</span>
       </button>
       {open && (
         <div
           role="dialog"
           aria-label="Your privacy"
-          className="toast-in-up absolute left-0 top-11 z-50 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-line bg-desk p-4 text-sm shadow-[0_16px_40px_-12px_rgb(16_24_40/0.45)]"
+          className="toast-in-up absolute left-0 top-11 z-50 w-[min(20rem,calc(100vw-2rem))] glass rounded-2xl p-4 text-sm"
         >
           <p className="font-semibold">Your files stay here</p>
           <p className="mt-1.5 leading-relaxed text-muted">
@@ -61,10 +61,10 @@ export function PrivacyBadge() {
             {!online && ' Right now you’re offline, and everything still works.'}
           </p>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-            <a href="/privacy.html#check" className="font-semibold text-ink hover:underline">
+            <a href="/privacy.html#check" className="font-semibold text-link hover:underline">
               Check it yourself
             </a>
-            <a href={reportHref(__APP_VERSION__, navigator.userAgent)} className="font-semibold text-ink hover:underline">
+            <a href={reportHref(__APP_VERSION__, navigator.userAgent)} className="font-semibold text-link hover:underline">
               Report a problem
             </a>
           </div>
