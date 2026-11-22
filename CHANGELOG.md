@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.8.0] - TBD
+## [1.8.0] - 2026-11-23
 
 ### Added
 - Redact. In Fill and sign, choose Redact, click where the box should go, then drag its corner to cover what must be hidden. When you export, each redacted page becomes a picture with the box burned into the pixels, so the covered text is removed for good, not just hidden under a black shape. This applies to every export: merge, split, compress, page numbers, watermarks and saving pages as images. Redacted pages lose their selectable text, and saving text skips them.
