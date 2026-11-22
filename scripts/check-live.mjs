@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { NOT_SERVED, headersFor, parseHeaders, removedFor } from '../tests/e2e/server.mjs'
+import { foreignResources } from './foreign.mjs'
 
 const args = process.argv.slice(2)
 const site = (args.find((a) => /^https?:\/\//.test(a)) ?? 'https://cornerfold.org').replace(/\/$/, '')
@@ -44,9 +45,7 @@ async function check() {
   const foreign = []
   for (const file of built.filter((f) => f.endsWith('.html'))) {
     const html = new TextDecoder().decode((await get(addressOf(file))).bytes)
-    for (const [, tag, url] of html.matchAll(/<(script|link|img|iframe|source|embed|object)\b[^>]*?\b(?:src|href|data)\s*=\s*["']([^"']+)["']/gi)) {
-      if (/^https?:\/\//i.test(url) && new URL(url).origin !== new URL(site).origin && !(tag === 'link' && /rel=["'](canonical|alternate)["']/.test(html))) foreign.push(`${addressOf(file) || '/'}: <${tag}> from ${new URL(url).host}`)
-    }
+    for (const found of foreignResources(html, site)) foreign.push(`${addressOf(file) || '/'}: ${found}`)
   }
   ok('no page loads anything from another site', foreign.length === 0, foreign.slice(0, 5).join('; '))
 

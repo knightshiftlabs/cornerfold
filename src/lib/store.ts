@@ -121,11 +121,22 @@ export const useStore = create<State>((set, get) => {
     const used = new Set<string>()
     for (const list of [s.pages, ...s.past, ...s.future]) for (const p of list) used.add(p.sourceId)
     const unused = Object.keys(s.sources).filter((id) => !used.has(id))
-    if (!unused.length) return
-    const sources = { ...s.sources }
-    for (const id of unused) delete sources[id]
-    set({ sources })
-    releaseHandler(unused)
+    if (unused.length) {
+      const sources = { ...s.sources }
+      const fieldValues = { ...s.fieldValues }
+      for (const id of unused) {
+        delete sources[id]
+        delete fieldValues[id]
+      }
+      set({ sources, fieldValues })
+      releaseHandler(unused)
+    }
+    // A signature stays while a page (or an undo or redo step) uses it, or while it is one of the two shown for reuse.
+    const marked = new Set<string>()
+    for (const list of [s.pages, ...s.past, ...s.future]) for (const p of list) for (const m of p.marks ?? []) if (m.kind === 'image') marked.add(m.imageId)
+    const recent = new Set(Object.keys(s.markImages).slice(-2))
+    const drop = Object.keys(s.markImages).filter((id) => !marked.has(id) && !recent.has(id))
+    if (drop.length) set({ markImages: Object.fromEntries(Object.entries(s.markImages).filter(([id]) => !drop.includes(id))) })
   }
 
   return {

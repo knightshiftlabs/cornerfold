@@ -17,7 +17,7 @@
 
   <h2>Your files never leave your device</h2>
   <p><strong>How it’s kept.</strong> Everything happens in your browser. Cornerfold’s code has no way of sending data anywhere: no uploads, no requests, no beacons. The site’s security policy also tells your browser to block connections to every other website.</p>
-  <p><strong>How it’s tested.</strong> Every tool is tested in a real browser, under the site’s real security policy, by adding, editing and exporting files. Each test fails if any request leaves the site. A separate test fails if the code ever gains a way of sending data.</p>
+  <p><strong>How it’s tested.</strong> Every tool is tested in a real browser, under the site’s real security policy, by adding, editing and exporting files. Each test fails if any request leaves the site, or if the site sends anything to itself except plain requests for its own files. A separate test fails if the code ever gains a way of sending data.</p>
   <p><strong>Check it yourself.</strong> Open your browser’s developer tools, choose Network, then add and export a file. You’ll see Cornerfold load its own files and nothing else.</p>
 
   <h2>No tracking, analytics or ads</h2>

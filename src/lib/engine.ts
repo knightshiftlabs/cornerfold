@@ -23,13 +23,16 @@ export function getWorker() {
     if (ok) w.resolve({ files, stats, info, unlock })
     else w.reject(new Error(error))
   }
-  worker.onerror = () => {
+  // A crash, or a message the engine could not read, ends every job that is waiting, and the next job starts a fresh engine.
+  const stop = () => {
     for (const w of waiting.values()) w.reject(new Error('Cornerfold’s PDF engine stopped. Reload the page and try again.'))
     waiting.clear()
     sent.clear()
     worker?.terminate()
     worker = null
   }
+  worker.onerror = stop
+  worker.onmessageerror = stop
   return worker
 }
 

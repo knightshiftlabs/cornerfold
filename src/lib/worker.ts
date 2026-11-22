@@ -349,6 +349,8 @@ self.onmessage = async (e: MessageEvent) => {
     options?: { preset?: keyof typeof PRESETS; target?: number; groups?: number[][]; maxBytes?: number; paper?: Paper; stamps?: Stamps; fields?: Recipe['fields']; flatten?: boolean; images?: MarkImage[] }
   }
   const recipe: Recipe = { paper: options?.paper ?? DEFAULT_PAPER, fields: options?.fields, flatten: options?.flatten }
+  // Each job brings the signatures its pages use, so the engine holds only those, never ones from earlier jobs.
+  markImages.clear()
   for (const img of options?.images ?? []) markImages.set(img.id, img)
   for (const s of incoming) sources.set(s.id, s)
   try {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import type { MarkImage } from '../../lib/marks'
 import { SIGNATURE_NOTE, inkToImage, loadSignatureFont, photoSignature, typedSignature } from '../../lib/signature'
@@ -16,6 +16,9 @@ export function SignatureMaker({ onClose, onMade }: { onClose: () => void; onMad
   const [name, setName] = useState('')
   const [photo, setPhoto] = useState<MarkImage | null>(null)
   const [drawn, setDrawn] = useState(false)
+  // One address per photo, made once and given back when the photo changes or the sheet closes.
+  const photoUrl = useMemo(() => (photo ? URL.createObjectURL(new Blob([photo.png], { type: 'image/png' })) : ''), [photo])
+  useEffect(() => () => void (photoUrl && URL.revokeObjectURL(photoUrl)), [photoUrl])
   const canvas = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -158,7 +161,7 @@ export function SignatureMaker({ onClose, onMade }: { onClose: () => void; onMad
                 }}
               />
             </label>
-            {photo && <img alt="Your signature, with the paper removed" className="mt-3 max-h-32 rounded-2xl border border-line bg-[repeating-conic-gradient(#eee_0_25%,#fff_0_50%)] bg-[length:16px_16px] p-2" src={URL.createObjectURL(new Blob([photo.png], { type: 'image/png' }))} />}
+            {photo && <img alt="Your signature, with the paper removed" className="mt-3 max-h-32 rounded-2xl border border-line bg-[repeating-conic-gradient(#eee_0_25%,#fff_0_50%)] bg-[length:16px_16px] p-2" src={photoUrl} />}
             <p className="mt-2 text-sm text-muted">The paper is made see-through, so only the ink goes on the page. The photo itself isn’t kept.</p>
           </div>
         )}

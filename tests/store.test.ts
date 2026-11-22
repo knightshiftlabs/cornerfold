@@ -64,3 +64,42 @@ describe('freeing memory (regression: deleted files were kept forever)', () => {
     expect(released).toEqual([])
   })
 })
+
+describe('letting go of signatures and form answers that nothing uses', () => {
+  const sig = (id: string) => ({ id, png: new Uint8Array(4), width: 10, height: 5 })
+  const mark = (imageId: string) => ({ id: `m-${imageId}`, kind: 'image' as const, x: 0.1, y: 0.1, w: 0.2, h: 0.1, imageId })
+  const ids = () => Object.keys(useStore.getState().markImages).sort()
+  beforeEach(() => {
+    useStore.setState({ markImages: {}, fieldValues: {} })
+    for (const id of ['one', 'two', 'three', 'four']) useStore.getState().addMarkImage(sig(id))
+  })
+
+  it('keeps a signature that a page uses, and the two newest for reuse, and lets the rest go', () => {
+    useStore.getState().setMarks('p1', [mark('one')])
+    expect(ids()).toEqual(['four', 'one', 'three'])
+  })
+
+  it('keeps a signature that only an undo step still uses, and drops it once no step can bring it back', () => {
+    useStore.getState().setMarks('p1', [mark('one')])
+    useStore.getState().setMarks('p1', [])
+    expect(ids()).toContain('one')
+    for (let i = 0; i < 101; i++) useStore.getState().rotate(new Set(['p2']), 90)
+    expect(ids()).toEqual(['four', 'three'])
+  })
+
+  it('undo brings back a page with its signature after the signature was removed', () => {
+    useStore.getState().setMarks('p1', [mark('one')])
+    useStore.getState().setMarks('p1', [])
+    useStore.getState().undo()
+    expect(useStore.getState().pages[0].marks?.[0]).toMatchObject({ imageId: 'one' })
+    expect(ids()).toContain('one')
+  })
+
+  it('drops the form answers of a file that nothing can bring back', () => {
+    useStore.getState().setField('a', 'name', 'Ada')
+    useStore.getState().setField('b', 'name', 'Bo')
+    useStore.getState().remove(new Set(['p1']))
+    for (let i = 0; i < 101; i++) useStore.getState().rotate(new Set(['p2']), 90)
+    expect(Object.keys(useStore.getState().fieldValues)).toEqual(['b'])
+  })
+})

@@ -27,11 +27,15 @@ export function textFromItems(items: TextItem[]) {
 export interface PageText {
   page: number
   text: string
+  /** The page could not be read at all (not the same as a page with no text on it). */
+  failed?: boolean
 }
 
 /** One text file for many pages, each under its own heading. */
 export function combineText(pages: PageText[]) {
-  const withText = pages.filter((p) => p.text.trim()).length
-  const text = pages.map((p) => `--- Page ${p.page} ---\n\n${p.text.trim() || '(No text on this page.)'}`).join('\n\n') + '\n'
-  return { text, withText, without: pages.length - withText }
+  const failed = pages.filter((p) => p.failed).map((p) => p.page)
+  const withText = pages.filter((p) => !p.failed && p.text.trim()).length
+  const body = (p: PageText) => (p.failed ? '(This page could not be read.)' : p.text.trim() || '(No text on this page.)')
+  const text = pages.map((p) => `--- Page ${p.page} ---\n\n${body(p)}`).join('\n\n') + '\n'
+  return { text, withText, without: pages.length - withText - failed.length, failed }
 }

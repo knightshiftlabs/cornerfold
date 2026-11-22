@@ -8,6 +8,18 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.5.2] - TBD
+
+### Fixed
+- The daily check of the live site could miss a script from another website on a page that also had a canonical link. It now reads each tag on its own, and also catches addresses without a scheme, srcset images and styles. New tests try to sneak such things past it.
+- A signature photo's preview no longer leaves a small picture in memory every time the sheet redraws.
+- If Cornerfold's PDF engine receives a message it cannot read, the job now stops with a clear message instead of waiting forever.
+- Extract text now tells you which pages could not be read, instead of treating them as pages with no text.
+- Signatures and form answers that nothing uses any more are now released, so long sessions use less memory.
+
+### Notes
+- Our browser tests now fail if the site sends anything to itself other than plain requests for its own files, such as a POST, a request with a body or a very long address. Before, anything to our own address was allowed.
+
 ## [1.5.1] - 2026-11-23
 
 ### Changed

@@ -365,6 +365,7 @@ function TextPanel() {
             {result.withText === result.total
               ? `Text found on ${result.total === 1 ? 'the page' : `all ${result.total} pages`}.`
               : `Text found on ${result.withText} of ${pagesWord(result.total)}.`}
+            {result.failed.length > 0 && ` Cornerfold couldn’t read ${result.failed.length === 1 ? 'page' : 'pages'} ${result.failed.join(', ')}, so ${result.failed.length === 1 ? 'it is' : 'they are'} marked in the text.`}
             {result.without > 0 && ` ${result.without === 1 ? '1 page has' : `${result.without} pages have`} no text: ${result.without === 1 ? 'it is probably a scan or a picture' : 'they are probably scans or pictures'}, and Cornerfold can’t read text from images yet.`}
           </p>
           <textarea readOnly value={result.text} aria-label="The text" className="mt-3 h-64 w-full resize-y rounded-2xl border border-line bg-paper p-3 font-mono text-xs outline-none focus:border-ink" />

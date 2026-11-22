@@ -46,7 +46,7 @@ export async function collectText() {
   const parts = []
   for (let i = 0; i < list.length; i++) {
     const p = list[i]
-    parts.push({ page: i + 1, text: await pageText(st.sources[p.sourceId], p.index).catch(() => '') })
+    parts.push(await pageText(st.sources[p.sourceId], p.index).then((text) => ({ page: i + 1, text }), () => ({ page: i + 1, text: '', failed: true })))
   }
   return { ...combineText(parts), total: list.length, name: `${baseName(list)}.txt` }
 }

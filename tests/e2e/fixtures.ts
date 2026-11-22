@@ -1,5 +1,6 @@
 // What every browser test shares: the documents, a guard that holds every test to the privacy promise,
 // and an `app` helper so tests read like what a person does.
+import { badRequest } from './guard'
 import { test as base, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -69,8 +70,8 @@ export const test = base.extend<Fixtures>({
         })
       })
       context.on('request', (r) => {
-        const url = r.url()
-        if (!url.startsWith(origin) && !url.startsWith('blob:') && !url.startsWith('data:')) problems.push(`request left the site: ${url}`)
+        const problem = badRequest(origin, { url: r.url(), method: r.method(), hasBody: r.postDataBuffer() !== null })
+        if (problem) problems.push(problem)
       })
       page.on('pageerror', (e) => problems.push(`script error: ${e.message}`))
       page.on('console', (m) => m.type() === 'error' && problems.push(`console error: ${m.text()}`))

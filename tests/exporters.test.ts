@@ -72,12 +72,17 @@ describe('extracting text', () => {
     expect((await collectText()).text).toBe('--- Page 1 ---\n\nText of 3\n')
   })
 
-  it('a page that can’t be read counts as having no text, rather than failing everything', async () => {
+  it('a page that can’t be read is reported as unreadable, not as a page with no text, and does not stop the others', async () => {
     pageText.mockImplementation(async (_s, index) => {
       if (index === 0) throw new Error('broken')
-      return 'ok'
+      return index === 1 ? '' : 'ok'
     })
-    expect((await collectText()).without).toBe(1)
+    const r = await collectText()
+    expect(r.failed).toEqual([1])
+    expect([r.withText, r.without]).toEqual([1, 1])
+    expect(r.text).toContain('--- Page 1 ---\n\n(This page could not be read.)')
+    expect(r.text).toContain('--- Page 2 ---\n\n(No text on this page.)')
+    expect(r.text).toContain('--- Page 3 ---\n\nok')
   })
 })
 
