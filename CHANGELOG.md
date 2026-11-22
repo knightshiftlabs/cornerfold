@@ -8,6 +8,11 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.8.1] - TBD
+
+### Fixed
+- The automatic check of the live site no longer asks for new files before a release has finished going up. Asking early made the check fail, and could leave the site's cache holding a page where a script should be. It now waits for the home page to switch over first, and says which file differs if one does.
+
 ## [1.8.0] - 2026-11-23
 
 ### Added
