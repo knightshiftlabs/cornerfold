@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.8.2] - TBD
+## [1.8.2] - 2026-11-23
 
 ### Changed
 - Honesty about how Cornerfold is made. The About page, Check our claims, the privacy policy, the terms, the README and CONTRIBUTING now say plainly that Cornerfold is AI-coded (most of its code is written by Claude, an AI model from Anthropic, and reviewed and released by KnightShift Labs), and that it has not had an independent security audit. Check our claims has a new section on what its checks do not cover. The About page no longer says you never have to trust anything, and says the byte-for-byte build needs the same tool versions.
