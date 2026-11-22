@@ -5,6 +5,22 @@ import { CHOICES, DEFAULTS, KEY, apply, load, sanitize, save, usePrefs } from '.
 
 const themeJs = readFileSync('public/theme.js', 'utf8')
 
+// Our own small storage. Newer Node versions ship a built-in localStorage that throws unless started with a flag, and it
+// hides the one jsdom provides, so these tests must not depend on whichever one the machine happens to have.
+let failWrites = false
+function fakeStorage() {
+  const data = new Map<string, string>()
+  return {
+    getItem: (k: string) => data.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      if (failWrites) throw new Error('quota')
+      data.set(k, String(v))
+    },
+    removeItem: (k: string) => void data.delete(k),
+    clear: () => data.clear(),
+  }
+}
+
 function mockMedia(dark: boolean, reduce = false) {
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('dark') ? dark : q.includes('reduce') ? reduce : false, addEventListener() {}, removeEventListener() {} }))
 }
@@ -15,7 +31,8 @@ const reset = () => {
 }
 
 beforeEach(() => {
-  localStorage.clear()
+  failWrites = false
+  vi.stubGlobal('localStorage', fakeStorage())
   reset()
   mockMedia(false)
 })
@@ -41,11 +58,8 @@ describe('the saved look', () => {
   it('survives unreadable or blocked storage', () => {
     localStorage.setItem(KEY, '{not json')
     expect(load()).toEqual(DEFAULTS)
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new Error('quota')
-    })
+    failWrites = true
     expect(() => save({ ...DEFAULTS, theme: 'dark' })).not.toThrow()
-    vi.restoreAllMocks()
   })
 
   it('ignores things that are not a look at all', () => {
