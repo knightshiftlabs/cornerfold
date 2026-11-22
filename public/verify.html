@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Check our claims: Cornerfold</title>
-<meta name="description" content="Every promise Cornerfold makes, how it is kept, how it is tested, and how you can check it yourself." />
+<meta name="description" content="Every promise Cornerfold makes, how it is kept and tested, and how to check it yourself." />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="/pages.css" />
 </head>
@@ -12,47 +12,47 @@
 <main>
   <p><a href="/">Back to Cornerfold</a></p>
   <h1>Check our claims</h1>
-  <p class="muted">Every promise Cornerfold makes, how it is kept, how it is tested, and how you can check it yourself.</p>
-  <p>You shouldn’t have to take a privacy promise on trust. For each claim below, the first answer is what makes it true, the second is the automatic test that fails if it ever stops being true, and the third is how you can see for yourself. The tests run on every change to Cornerfold, and their results are public on <a href="https://github.com/knightshiftlabs/cornerfold/actions">GitHub</a>.</p>
+  <p class="muted">Every promise we make, and how to check it yourself.</p>
+  <p>You shouldn’t have to take a privacy promise on trust. Each claim shows how it is kept, the automatic test that fails if it stops being true, and how you can check it yourself. The tests run on every change, and their results are <a href="https://github.com/knightshiftlabs/cornerfold/actions">public on GitHub</a>.</p>
 
   <h2>Your files never leave your device</h2>
-  <p><strong>How it’s kept.</strong> Everything happens in your browser. Cornerfold’s code contains no way of sending data anywhere: no uploads, no requests, no beacons. As a second safeguard, the site’s security policy tells your browser to block connections to any other website.</p>
-  <p><strong>How it’s tested.</strong> Cornerfold is tested in a real browser, under the site’s real security policy, adding, editing and exporting files with every tool. Every one of those tests fails if any request leaves the site. A separate test fails if the code ever contains a way of sending data.</p>
-  <p><strong>Check it yourself.</strong> Open your browser’s developer tools, choose the Network tab, then add and export a file. You’ll see Cornerfold load its own files and nothing else.</p>
+  <p><strong>How it’s kept.</strong> Everything happens in your browser. Cornerfold’s code has no way of sending data anywhere: no uploads, no requests, no beacons. The site’s security policy also tells your browser to block connections to every other website.</p>
+  <p><strong>How it’s tested.</strong> Every tool is tested in a real browser, under the site’s real security policy, by adding, editing and exporting files. Each test fails if any request leaves the site. A separate test fails if the code ever gains a way of sending data.</p>
+  <p><strong>Check it yourself.</strong> Open your browser’s developer tools, choose Network, then add and export a file. You’ll see Cornerfold load its own files and nothing else.</p>
 
   <h2>No tracking, analytics or ads</h2>
-  <p><strong>How it’s kept.</strong> Cornerfold has no analytics or advertising code. Our hosting provider’s own analytics are switched off, and every page tells anything between us and you not to change it, so no one can add a script on the way.</p>
-  <p><strong>How it’s tested.</strong> Every day, and after every change, an automatic check fetches the live site and fails if any page loads anything from another website.</p>
-  <p><strong>Check it yourself.</strong> View the source of any page: every script and style comes from cornerfold.org.</p>
+  <p><strong>How it’s kept.</strong> Cornerfold has no analytics or advertising code. Our host’s analytics and its network-error reports are switched off, and every page tells anything between us and you not to modify it, so nothing can be injected on the way.</p>
+  <p><strong>How it’s tested.</strong> Every day, and after every change, an automatic check fetches the live site and fails if any page loads anything from another website, or if our host starts asking browsers to send reports elsewhere.</p>
+  <p><strong>Check it yourself.</strong> View the source of any page. Every script and style comes from cornerfold.org.</p>
 
   <h2>The site runs exactly the public source code</h2>
-  <p><strong>How it’s kept.</strong> The source code is <a href="https://github.com/knightshiftlabs/cornerfold">public on GitHub</a>, and building it always gives the same files, byte for byte.</p>
-  <p><strong>How it’s tested.</strong> The same daily check builds the code on GitHub and compares every file it makes with the file cornerfold.org actually serves. Any difference, added or changed, fails the check.</p>
+  <p><strong>How it’s kept.</strong> The source code is <a href="https://github.com/knightshiftlabs/cornerfold">public on GitHub</a>, and building it always produces the same files, byte for byte.</p>
+  <p><strong>How it’s tested.</strong> The same daily check builds the code on GitHub and compares every file with the one cornerfold.org serves. Any difference, whether a file is changed or added, fails the check.</p>
   <p><strong>Check it yourself.</strong> With Node.js installed, download the code and run <code>npm ci</code>, <code>npm run build</code> and <code>npm run check:live</code>.</p>
 
   <h2>Passwords are never kept</h2>
-  <p><strong>How it’s kept.</strong> A password you type is used once, on your device, to open that file, and then forgotten.</p>
-  <p><strong>How it’s tested.</strong> After opening a protected file, a browser test searches everywhere a website can store things (its storage, cookies, caches and the page itself) and fails if the password is found anywhere.</p>
-  <p><strong>Check it yourself.</strong> Open a protected file, then look under your browser’s Application or Storage tab in the developer tools.</p>
+  <p><strong>How it’s kept.</strong> A password you type is used once, on your device, to open that file. Then it is forgotten.</p>
+  <p><strong>How it’s tested.</strong> After a protected file is opened, a browser test searches everywhere a website can store data (storage, cookies, caches and the page itself) and fails if the password is there.</p>
+  <p><strong>Check it yourself.</strong> Open a protected file, then look under Application or Storage in your browser’s developer tools.</p>
 
   <h2>Signatures are never kept</h2>
-  <p><strong>How it’s kept.</strong> A signature you make, drawn, typed or from a photo, stays in the open tab only. It is added to the pages you export and forgotten when you close the tab.</p>
-  <p><strong>How it’s tested.</strong> After making and using a signature, a browser test searches everywhere a website can store things and fails if anything was saved.</p>
-  <p><strong>Check it yourself.</strong> Sign something, then look under your browser’s Application or Storage tab in the developer tools: nothing has been stored. The only thing Cornerfold ever keeps there, besides the app itself, is your look settings, and only if you change them in Appearance.</p>
+  <p><strong>How it’s kept.</strong> A signature you make, whether drawn, typed or from a photo, stays in the open tab. It is added to the pages you export and forgotten when you close the tab.</p>
+  <p><strong>How it’s tested.</strong> After a signature is made and used, a browser test searches everywhere a website can store data and fails if anything was saved.</p>
+  <p><strong>Check it yourself.</strong> Sign something, then look under Application or Storage in your browser’s developer tools. Nothing has been stored. The only thing Cornerfold keeps, besides the app itself, is your look settings, and only if you change them in Appearance.</p>
 
   <h2>No accounts and no cookies</h2>
   <p><strong>How it’s kept.</strong> There is nothing to sign in to, and Cornerfold sets no cookies.</p>
   <p><strong>How it’s tested.</strong> A browser test fails if the site sets any cookie.</p>
-  <p><strong>Check it yourself.</strong> Look under Cookies in your browser’s developer tools: there are none for cornerfold.org.</p>
+  <p><strong>Check it yourself.</strong> Look under Cookies in your browser’s developer tools. There are none for cornerfold.org.</p>
 
   <h2>Strict security settings</h2>
-  <p><strong>How it’s kept.</strong> The site sends strict security headers, which limit what a page may load and do, and forbid other sites from framing it.</p>
+  <p><strong>How it’s kept.</strong> The site sends strict security headers. They limit what a page may load and do, and stop other sites from framing it.</p>
   <p><strong>How it’s tested.</strong> Every browser test runs under these exact headers, and the daily check fails if the live site sends anything different.</p>
   <p><strong>Check it yourself.</strong> Run cornerfold.org through an independent scanner such as <a href="https://securityheaders.com/?q=cornerfold.org&amp;followRedirects=on">securityheaders.com</a>.</p>
 
   <h2>It works offline</h2>
-  <p><strong>How it’s kept.</strong> After your first visit, the app keeps a copy of its own files (never yours) in your browser.</p>
-  <p><strong>How it’s tested.</strong> By hand, before releases. An automatic test is planned and not built yet.</p>
+  <p><strong>How it’s kept.</strong> After your first visit, the app keeps a copy of its own files, never yours, in your browser.</p>
+  <p><strong>How it’s tested.</strong> Checked by hand before each release. An automatic test is planned but not built yet.</p>
   <p><strong>Check it yourself.</strong> Visit once, switch on airplane mode, then reload the page and use it.</p>
 
   <h2>If any of this is ever untrue</h2>

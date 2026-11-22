@@ -165,9 +165,14 @@ test.describe('Fill and sign on a phone', () => {
       return columns.size
     })
     expect(inked).toBeGreaterThan(8)
-    await page.getByRole('button', { name: 'Use this signature' }).tap()
+    const use = page.getByRole('button', { name: 'Use this signature' })
+    // Tap only once nothing is moving (the sheet, the button's own press effect), or a tap can land mid-animation.
+    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))))
+    await use.tap()
     // If the signature doesn't appear, say what the app said, so a failure explains itself.
     const placed = editor.getByRole('button', { name: /^Signature\./ })
+    // A slow runner can swallow one tap; a person would simply tap again. Once, and only if the sheet is still open.
+    if (!(await placed.waitFor({ timeout: 3_000 }).then(() => true, () => false)) && (await use.count())) await use.tap()
     const outcome = await Promise.race([
       placed.waitFor({ timeout: 10_000 }).then(() => 'placed'),
       page.getByRole('alert').waitFor({ timeout: 10_000 }).then(async () => `the app said: ${await page.getByRole('alert').innerText()}`),

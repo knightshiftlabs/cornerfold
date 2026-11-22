@@ -8,6 +8,12 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.5.1] - TBD
+
+### Changed
+- Our host's network error reports, which asked your browser to send Cloudflare a short report when a page failed to load, are now switched off. The daily check of the live site fails if they ever come back, and the privacy policy and Check our claims say so.
+- Check our claims: shorter, plainer wording, with the same meaning.
+
 ## [1.5.0] - 2026-11-23
 
 ### Added
