@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.6.0] - TBD
+## [1.6.0] - 2026-11-23
 
 ### Added
 - A new version now reaches you without a hard refresh. When one is ready, Cornerfold reloads into it by itself if no files are open. If files are open, a small notice asks first, because a reload closes them: choose Reload now when you are ready, or Later.
