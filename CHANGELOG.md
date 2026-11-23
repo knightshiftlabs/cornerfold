@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.8.3] - TBD
+## [1.8.3] - 2026-11-23
 
 ### Fixed
 - A browser test of the toolbar on a 320-pixel phone screen sometimes failed on GitHub for no real reason: it measured the page in the instant after the screen was resized, before the page had finished re-laying itself out. It now keeps measuring until the page settles. A toolbar that really sticks out still fails it. This stops the occasional failure emails; nothing changes in the app.
