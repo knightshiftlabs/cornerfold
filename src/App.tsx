@@ -26,7 +26,7 @@ export default function App() {
   return (
     <>
       <TopBar />
-      <main>{hasPages ? <PageGrid /> : <EmptyState />}</main>
+      <main className="overflow-x-clip">{hasPages ? <PageGrid /> : <EmptyState />}</main>
       {hasPages && <Dock />}
       {dragging && <DropOverlay />}
       <CompressDialog />

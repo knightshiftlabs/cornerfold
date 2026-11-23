@@ -8,6 +8,13 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.8.4] - TBD
+
+### Fixed
+- On the smallest phones (320 pixels wide) the home screen was wider than the screen, so the page could be dragged sideways. The top bar's three words (What's new, Privacy, Appearance) did not fit beside the logo. On phones the bar now shows just the Appearance button, and Privacy has joined the links at the bottom of the home screen (the version number there already opens What's new).
+- On those phones, while pages dropped onto the desk after you added a file, they briefly stuck out past the screen edge and made the page wobble sideways for about a second. Nothing can stick out sideways there any more.
+- This corrects 1.8.3. That release said a failing browser test was measuring at the wrong moment and changed the test to wait. The test was right and the app was wrong: the two problems above were real. The test is strict again, and two new tests cover the home screen and the landing pages at 320, 360 and 390 pixels.
+
 ## [1.8.3] - 2026-11-23
 
 ### Fixed

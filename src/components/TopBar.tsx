@@ -98,15 +98,19 @@ export function TopBar() {
           </>
         ) : (
           <nav className="flex items-center gap-1 text-sm font-medium text-muted">
-            <a href="/changes.html" className="rounded-[var(--r-ctl)] px-3 py-2 hover:text-fg">
+            <a href="/changes.html" className="rounded-[var(--r-ctl)] px-3 py-2 hover:text-fg max-sm:hidden">
               What’s new
             </a>
-            <a href="/privacy.html" className="rounded-[var(--r-ctl)] px-3 py-2 hover:text-fg">
+            <a href="/privacy.html" className="rounded-[var(--r-ctl)] px-3 py-2 hover:text-fg max-sm:hidden">
               Privacy
             </a>
-            <button type="button" onClick={() => usePrefs.getState().setOpen(true)} className="rounded-[var(--r-ctl)] px-3 py-2 hover:text-fg">
+            <button type="button" onClick={() => usePrefs.getState().setOpen(true)} className="rounded-[var(--r-ctl)] px-3 py-2 hover:text-fg max-sm:hidden">
               Appearance
             </button>
+            {/* On phones the three words do not fit beside the logo; the footer has the two page links. */}
+            <IconButton label="Appearance" onClick={() => usePrefs.getState().setOpen(true)} className="sm:hidden">
+              <SlidersHorizontal />
+            </IconButton>
           </nav>
         )}
       </div>
