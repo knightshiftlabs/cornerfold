@@ -14,6 +14,17 @@ const wrapped = (page: Page) =>
       .map((el) => (el.textContent ?? '').trim()),
   )
 
+/**
+ * The toolbar fits: nothing sticks out past the screen and no label has wrapped. Measured by polling rather than once:
+ * right after the screen is resized the page spends a moment re-laying itself out, and a single reading in that moment
+ * can see a few pixels that are gone a frame later (it failed that way on GitHub, never on a real phone). A page that
+ * really overflows still overflows on every reading, so this still fails for it, after the polling time.
+ */
+async function fits(page: Page, when: string) {
+  await expect.poll(() => overflow(page), { message: `sticks out past the screen (${when})` }).toBeLessThanOrEqual(0)
+  await expect.poll(() => wrapped(page), { message: `labels wrapped onto a second line (${when})` }).toEqual([])
+}
+
 test.beforeEach(async ({ app }) => {
   await app.open()
   await app.add('report.pdf')
@@ -23,13 +34,12 @@ test.beforeEach(async ({ app }) => {
 for (const width of [320, 360, 390]) {
   test(`at ${width} pixels wide the toolbar fits, with and without a selection`, async ({ page, app }) => {
     await page.setViewportSize({ width, height: 780 })
-    expect(await overflow(page), 'nothing selected').toBeLessThanOrEqual(0)
+    await fits(page, 'nothing selected')
     await expect(page.getByRole('button', { name: 'Undo' })).toBeVisible()
     for (const count of [1, 4]) {
       for (let n = 1; n <= count; n++) await app.card(n).tap()
       await expect(page.locator('header')).toContainText(`${count}`)
-      expect(await overflow(page), `${count} selected`).toBeLessThanOrEqual(0)
-      expect(await wrapped(page), `${count} selected`).toEqual([])
+      await fits(page, `${count} selected`)
       await page.getByRole('button', { name: 'Clear selection' }).tap()
     }
   })
