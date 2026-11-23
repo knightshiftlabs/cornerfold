@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.8.4] - TBD
+## [1.8.4] - 2026-11-23
 
 ### Fixed
 - On the smallest phones (320 pixels wide) the home screen was wider than the screen, so the page could be dragged sideways. The top bar's three words (What's new, Privacy, Appearance) did not fit beside the logo. On phones the bar now shows just the Appearance button, and Privacy has joined the links at the bottom of the home screen (the version number there already opens What's new).
