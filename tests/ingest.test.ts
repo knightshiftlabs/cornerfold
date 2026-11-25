@@ -73,6 +73,16 @@ describe('files that should be added', () => {
     ])
   })
 
+  it('recognises a picture by its ending when the browser gives no type, as Safari’s engine does for .webp', async () => {
+    const png = new Uint8Array(readFileSync(new URL('./fixtures/not-a-pdf.pdf', import.meta.url)))
+    await ingestFiles([file(png, 'shot.PNG', ''), file(fixture('upright.jpg'), 'photo.jpeg', 'application/octet-stream')])
+    expect(pageCount()).toBe(2)
+    expect(Object.values(useStore.getState().sources).map((s) => [s.mime, s.width, s.height])).toEqual([
+      ['image/png', 400, 300],
+      ['image/jpeg', 300, 200],
+    ])
+  })
+
   it('keeps going when one file of several is bad, and says which', async () => {
     await ingestFiles([file(await textPdf(2), 'good.pdf'), file(fixture('corrupted.pdf'), 'broken.pdf')])
     expect(pageCount()).toBe(2)
@@ -115,6 +125,11 @@ describe('files that must be refused, each with its own explanation', () => {
     await ingestFiles([file(new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112]), 'IMG_0001.HEIC', 'image/heic')])
     expect(pageCount()).toBe(0)
     expect(toast()).toMatch(/iPhone photo \(HEIC\).*Most Compatible/)
+  })
+
+  it('a picture whose ending says image but whose bytes are not one gets the same notice as any undecodable picture', async () => {
+    await ingestFiles([file(new Uint8Array([1, 2, 3, 4]), 'fake.webp', '')])
+    expect(toast()).toMatch(/image format this browser can’t open/)
   })
 
   it('an image format the browser can’t decode', async () => {

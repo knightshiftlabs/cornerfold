@@ -8,6 +8,17 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.11.1] - TBD
+
+Fixes pictures being refused when the browser does not report what kind of file they are.
+
+### Fixed
+- A picture could be turned away with "isn’t a PDF or an image" when the browser reported no type for it. Cornerfold decided that a file was a picture only from the type the browser reports, and some browsers report none for some files: Safari’s engine, for a `.webp` file, in our tests. The browser could read the file perfectly well; Cornerfold never asked it to. Now, when the browser gives no type (or only the catch-all "application/octet-stream"), the file’s ending decides (jpg, jpeg, png, gif, webp, bmp, avif, heic, heif). A type the browser does give still wins, and a file that is not a picture (notes.txt, a .docx) is still refused as before. A file whose ending says picture but whose contents are not one gets the usual "image format this browser can’t open" notice.
+- Found by the browser tests that run in Firefox and Safari’s engine (WebKit), a report that does not block a release. A one-off check there showed Firefox and WebKit both decode WebP, BMP, GIF, PNG and JPEG themselves, and that only the WebP in WebKit was refused by Cornerfold.
+
+### Things to know
+- This was found and fixed by Claude (an AI) and reviewed and released by KnightShift Labs, like the rest of Cornerfold. Unit tests cover the new rule; the fix itself can only be confirmed in Safari’s engine on a machine that has it, and was not yet confirmed there when this was written.
+
 ## [1.11.0] - 2026-11-26
 
 A test fix for Safari and Firefox, and a one-line summary for every version below. The app is unchanged.

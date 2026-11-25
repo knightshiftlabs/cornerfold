@@ -6,11 +6,13 @@ import { stage } from './motion'
 import { getWorker, unlockInWorker } from './engine'
 import { askRestricted, questionsFor } from './passwords'
 import { stripJpegMetadata } from './jpeg'
+import { imageType } from './imageType'
 import { ImageTooLargeError, UNKNOWN_PICTURE_PIXELS, admit, decodeBudget } from './imageLimits'
 
 const uid = () => crypto.randomUUID()
 const isPdf = (f: File) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name)
-const isImage = (f: File) => f.type.startsWith('image/')
+
+const isImage = (f: File) => imageType(f) !== ''
 const stem = (name: string) => name.replace(/\.[^.]+$/, '') || 'file'
 
 class UnlockDeclined extends Error {} // the person chose to skip a locked file
@@ -199,18 +201,19 @@ async function normalizeImage(f: File) {
 }
 
 async function decodeImage(f: File, buf: ArrayBuffer) {
-  const jpeg = f.type === 'image/jpeg'
-  const png = f.type === 'image/png'
+  const type = imageType(f)
+  const jpeg = type === 'image/jpeg'
+  const png = type === 'image/png'
   const cleaned = jpeg ? stripJpegMetadata(new Uint8Array(buf)) : null
 
   if (png || (cleaned && jpegOrientation(buf) <= 1)) {
-    const bmp = await createImageBitmap(new Blob([buf], { type: f.type }))
+    const bmp = await createImageBitmap(new Blob([buf], { type }))
     const { width, height } = bmp
     bmp.close()
-    return { bytes: cleaned ?? new Uint8Array(buf), mime: f.type as 'image/png' | 'image/jpeg', width, height }
+    return { bytes: cleaned ?? new Uint8Array(buf), mime: type as 'image/png' | 'image/jpeg', width, height }
   }
 
-  const bmp = await createImageBitmap(new Blob([buf], { type: f.type }), { imageOrientation: 'from-image' })
+  const bmp = await createImageBitmap(new Blob([buf], { type }), { imageOrientation: 'from-image' })
   const canvas = document.createElement('canvas')
   let keepAlpha = false
   try {
