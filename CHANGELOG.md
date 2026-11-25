@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.11.0] - TBD
+## [1.11.0] - 2026-11-26
 
 A test fix for Safari and Firefox, and a one-line summary for every version below. The app is unchanged.
 
