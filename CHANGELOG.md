@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.10.0] - TBD
+## [1.10.0] - 2026-11-26
 
 ### Added
 - Protect with password. A new entry in the Tools menu locks the exported file with a password, using AES-256 encryption. Nobody can open the file without the password, and it works on your device like everything else: nothing is uploaded. You can also ask readers not to allow printing, copying text or editing. Those three are a request that well-behaved PDF readers follow and some programs ignore, so only the password really keeps people out. Cornerfold cannot recover a lost password.
