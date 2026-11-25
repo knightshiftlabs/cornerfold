@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.11.1] - TBD
+## [1.11.1] - 2026-11-26
 
 Fixes pictures being refused when the browser does not report what kind of file they are.
 
