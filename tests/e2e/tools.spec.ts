@@ -182,6 +182,41 @@ test('Document details go into every export once saved, and out again once clear
   expect(await info((await app.exportPdf()).bytes)).toEqual({ title: undefined, producer: undefined, author: undefined, creator: undefined, xmp: false })
 })
 
+test('Trim: cuts each side as seen, on a turned page too, and only hides what it cuts', async ({ page, app }) => {
+  await app.card(2).hover()
+  await app.card(2).getByRole('button', { name: 'Rotate right' }).click()
+  await app.tool(/Trim or resize/)
+  await page.locator('#layout-top').fill('abc')
+  await expect(app.dialog().getByRole('alert')).toContainText('millimetres')
+  await expect(app.dialog().getByRole('button', { name: 'Export trimmed' })).toBeDisabled()
+  for (const [side, mm] of [['top', '10'], ['right', '0'], ['bottom', '0'], ['left', '20']]) await page.locator(`#layout-${side}`).fill(mm)
+  const out = await app.download(() => app.dialog().getByRole('button', { name: 'Export trimmed' }).click())
+  expect(out.name).toBe('report-trimmed.pdf')
+  const doc = await load(out.bytes)
+  const mm = 72 / 25.4
+  const [one, two] = doc.getPages()
+  // Upright: the top loses 10 mm and the left 20 mm. The page itself keeps its full size.
+  const c1 = one.getCropBox()
+  expect([c1.x, c1.y, c1.width, c1.height].map((v) => Math.round(v))).toEqual([Math.round(20 * mm), 0, Math.round(595 - 20 * mm), Math.round(842 - 10 * mm)])
+  expect(one.getMediaBox().width).toBeCloseTo(595, 0)
+  // Turned a quarter clockwise: the top as seen is the page's own left side, the left as seen its bottom.
+  const c2 = two.getCropBox()
+  expect([c2.x, c2.y, c2.width, c2.height].map((v) => Math.round(v))).toEqual([Math.round(10 * mm), Math.round(20 * mm), Math.round(595 - 10 * mm), Math.round(842 - 20 * mm)])
+})
+
+test('Resize: every page fits the chosen paper, a landscape page on landscape paper', async ({ app }) => {
+  await app.card(3).hover()
+  await app.card(3).getByRole('button', { name: 'Rotate right' }).click()
+  await app.tool(/Trim or resize/)
+  await app.dialog().getByRole('radio', { name: 'Fit to a paper size' }).click()
+  await app.dialog().getByRole('radio', { name: 'Letter' }).click()
+  const out = await app.download(() => app.dialog().getByRole('button', { name: 'Export resized' }).click())
+  expect(out.name).toBe('report-resized.pdf')
+  const pages = (await seenText(out.bytes)).map((p) => `${Math.round(p.w)}x${Math.round(p.h)}`)
+  expect(pages).toEqual(['612x792', '612x792', '792x612', '612x792'])
+  expect((await seenText(out.bytes))[0].items.map((i) => i.str).join(' ')).toContain('Page 1, line 1') // the words are still words
+})
+
 test('Watermark explains text it can’t draw yet, and stamps every page', async ({ page, app }) => {
   await app.tool(/Watermark/)
   await page.locator('#watermark-text').fill('गोपनीय')

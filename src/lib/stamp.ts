@@ -2,6 +2,7 @@
 // bottom of the page on screen, and the text reads upright.
 import { StandardFonts, degrees, rgb, type PDFDocument, type PDFFont, type PDFPage } from '@cantoo/pdf-lib'
 import { labelsFor, seenSize, toPageSpace, turnOf, type NumberOptions, type Stamps, type WatermarkOptions } from './stampText'
+import { fitToPaper, trimLeavesEnough, trimmedBox, type Layout } from './layout'
 
 export type { Stamps } from './stampText'
 
@@ -35,9 +36,36 @@ function drawWatermark(page: PDFPage, font: PDFFont, o: WatermarkOptions) {
   page.drawText(o.text, { x: at.x, y: at.y, size, font, color: rgb(0.45, 0.47, 0.5), opacity: o.opacity, rotate: degrees(turn + o.angle) })
 }
 
+/**
+ * Trims a page (only what is shown changes: the cut-off parts stay in the file, hidden) or fits it to a paper size
+ * (the content and any form fields are scaled, and the page boxes replaced).
+ */
+function applyLayout(page: PDFPage, layout: Layout, n: number) {
+  const box = page.getCropBox()
+  const turn = turnOf(page.getRotation().angle)
+  if (layout.kind === 'trim') {
+    const [w, h] = seenSize(box, turn)
+    if (!trimLeavesEnough(w, h, layout.margins)) throw new Error(`The margins would leave almost nothing of page ${n}. Make them smaller.`)
+    const b = trimmedBox(box, turn, layout.margins)
+    page.setCropBox(b.x, b.y, b.width, b.height)
+    return
+  }
+  const { scale, box: b } = fitToPaper(box, turn, layout.paper)
+  page.scaleContent(scale, scale)
+  page.scaleAnnotations(scale, scale)
+  page.setMediaBox(b.x, b.y, b.width, b.height)
+  page.setCropBox(b.x, b.y, b.width, b.height)
+  // Boxes for printers, if any, would otherwise still describe the old page.
+  page.setBleedBox(b.x, b.y, b.width, b.height)
+  page.setTrimBox(b.x, b.y, b.width, b.height)
+  page.setArtBox(b.x, b.y, b.width, b.height)
+}
+
 export async function applyStamps(doc: PDFDocument, stamps: Stamps) {
-  const font = await doc.embedFont(StandardFonts.Helvetica)
   const pages = doc.getPages()
+  if (stamps.layout) pages.forEach((page, i) => applyLayout(page, stamps.layout!, i + 1))
+  if (!stamps.numbers && !stamps.watermark?.text.trim()) return
+  const font = await doc.embedFont(StandardFonts.Helvetica)
   const labels = stamps.numbers ? labelsFor(pages.length, stamps.numbers) : []
   pages.forEach((page, i) => {
     if (stamps.watermark?.text.trim()) drawWatermark(page, font, stamps.watermark)

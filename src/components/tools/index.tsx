@@ -1,12 +1,13 @@
 // The tool panels. Loaded only when a tool is first opened, so they cost nothing on the first screen.
 import { useMemo, useState } from 'react'
-import { collectText, exportProtected, exportStamped, saveImages } from '../../lib/exporters'
+import { collectText, exportProtected, exportStamped, saveImages, savePictures } from '../../lib/exporters'
 import { BATES_DIGITS, MAX_PREFIX, labelsFor, unsupportedCharacters, type NumberFormat, type NumberOptions, type NumberPosition, type WatermarkOptions } from '../../lib/stampText'
 import { download } from '../../lib/actions'
 import { describePaper, placeImage, type Paper } from '../../lib/paper'
 import { chunks, selectIndices, splitBy } from '../../lib/pageTools'
 import { everyNth, formatRanges, parseGroups, parseRanges } from '../../lib/ranges'
 import { useStore } from '../../lib/store'
+import { MM, PAPERS, type Margins, type PaperName } from '../../lib/layout'
 import { EMPTY_DETAILS, MAX_DETAIL, cleanDetails, detailsProblem, type DocDetails } from '../../lib/details'
 import { Button, Sheet } from '../ui'
 import { Choices, Field, TextInput } from './parts'
@@ -26,6 +27,8 @@ export default function Tools() {
   if (tool === 'watermark') return <WatermarkPanel />
   if (tool === 'protect') return <ProtectPanel />
   if (tool === 'details') return <DetailsPanel />
+  if (tool === 'layout') return <LayoutPanel />
+  if (tool === 'pictures') return <PicturesPanel />
   return null
 }
 
@@ -706,6 +709,99 @@ function DetailsPanel() {
         ))}
         <p className="text-sm text-muted">Kept only in this tab: closing it forgets them. Saving as images or text leaves them out, as those are not PDFs.</p>
       </div>
+    </Sheet>
+  )
+}
+
+const SIDES: (keyof Margins)[] = ['top', 'right', 'bottom', 'left']
+
+function LayoutPanel() {
+  const close = useStore((s) => s.closeTool)
+  const scope = useScope()
+  const [kind, setKind] = useState<'trim' | 'fit'>('trim')
+  const [mm, setMm] = useState<Record<keyof Margins, string>>({ top: '10', right: '10', bottom: '10', left: '10' })
+  const [paper, setPaper] = useState<PaperName>('a4')
+  const parsed = SIDES.map((k) => Number(mm[k]))
+  const marginError = parsed.every((v) => Number.isFinite(v) && v >= 0 && v <= 500) ? (parsed.every((v) => v === 0) ? 'Type a margin to trim on at least one side.' : null) : 'Type each margin in millimetres, such as 10.'
+  const ready = kind === 'fit' || !marginError
+  const go = () => {
+    if (!ready) return
+    close()
+    const margins = Object.fromEntries(SIDES.map((k, i) => [k, parsed[i] * MM])) as unknown as Margins
+    void exportStamped({ layout: kind === 'trim' ? { kind, margins } : { kind, paper } })
+  }
+  return (
+    <Sheet
+      title="Trim or resize pages"
+      intro={`Exports ${scope.label} trimmed or resized. Your pages here stay as they are.`}
+      onClose={close}
+      footer={
+        <>
+          <Button onClick={close}>Cancel</Button>
+          <Button variant="primary" disabled={!ready} onClick={go}>
+            {kind === 'trim' ? 'Export trimmed' : 'Export resized'}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-5">
+        <Choices<'trim' | 'fit'> label="What to do" value={kind} onChange={setKind} options={[{ value: 'trim', label: 'Trim the margins' }, { value: 'fit', label: 'Fit to a paper size' }]} />
+        {kind === 'trim' ? (
+          <>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {SIDES.map((k) => (
+                <Field key={k} id={`layout-${k}`} label={`${k[0].toUpperCase()}${k.slice(1)} (mm)`}>
+                  <TextInput id={`layout-${k}`} inputMode="decimal" value={mm[k]} aria-invalid={!!marginError} onInput={(e) => setMm({ ...mm, [k]: e.currentTarget.value })} className="!w-24" />
+                </Field>
+              ))}
+            </div>
+            {marginError && (
+              <p role="alert" className="text-sm font-medium">
+                {marginError}
+              </p>
+            )}
+            <p className="text-sm text-muted">
+              Each side is as you see the page, so a turned page is trimmed the way it looks. Trimming only hides the edges: what is cut off is still in the file, and anyone can bring it back. To remove something for good, use Redact in Fill and sign.
+            </p>
+          </>
+        ) : (
+          <>
+            <Choices<PaperName> label="Paper" value={paper} onChange={setPaper} options={(Object.keys(PAPERS) as PaperName[]).map((k) => ({ value: k, label: PAPERS[k].label }))} />
+            <p className="text-sm text-muted">Each page is scaled to fit the paper, keeping its shape, and centred. Landscape pages get landscape paper. A page of a different shape gets white space on two sides.</p>
+          </>
+        )}
+      </div>
+    </Sheet>
+  )
+}
+
+function PicturesPanel() {
+  const close = useStore((s) => s.closeTool)
+  const scope = useScope()
+  const go = () => {
+    close()
+    void savePictures()
+  }
+  return (
+    <Sheet
+      title="Pictures in the pages"
+      intro={`Saves the photos and images stored in ${scope.label}, each as its own file, at the size it is stored, not as it is shown on the page.`}
+      onClose={close}
+      footer={
+        <>
+          <Button onClick={close}>Cancel</Button>
+          <Button variant="primary" onClick={go}>
+            Save pictures
+          </Button>
+        </>
+      }
+    >
+      <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted">
+        <li>Pictures from a PDF come out as PNG, so nothing is lost, though a photo can be larger than it was inside the PDF. A page you added from a photo gives that photo back as it is.</li>
+        <li>A picture used on several pages comes out once. Tiny ones, such as dots and lines, are left out.</li>
+        <li>Pages with a redaction box are skipped, so nothing under a box can come out this way.</li>
+        <li>To save each whole page as a picture instead, use Save as images.</li>
+      </ul>
     </Sheet>
   )
 }

@@ -8,6 +8,21 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.13.0] - TBD
+
+Adds trimming and resizing pages, and saving the pictures stored in a PDF.
+
+### Added
+- Trim or resize, in the Tools menu under Pages. Trim cuts a margin you choose, in millimetres, off each side of the page as you see it, so a turned page is trimmed the way it looks. Resize fits each page onto A4, Letter, A3, A5 or Legal: the content is scaled to fit, keeps its shape and sits in the middle, and landscape pages get landscape paper. Both export a new file; the pages in Cornerfold stay as they are.
+- Pictures in the pages, in the Tools menu under Save as. It saves the photos and images stored inside the pages, each as its own file at the size it is stored: one picture as it is, several in a ZIP. A page you added from a photo gives that photo back. A picture used on several pages, or a page included twice, comes out once, and tiny ones such as dots and lines are left out. It works for every kind of picture a PDF can hold, because pdf.js, which already draws the pages, decodes them.
+
+### Things to know
+- Trimming hides the edges; it does not delete them. What is cut off is still in the file, and anyone can bring it back with the right program. To remove something for good, use Redact in Fill and sign.
+- Pages with a redaction box are skipped when saving pictures, so nothing under a box can come out that way. The notice says how many were skipped.
+- Pictures from a PDF come out as PNG, so nothing is lost, but a photo stored as JPEG inside the PDF can come out several times larger.
+- A page that is a very different shape from the paper gets wide white margins on two sides when resized. Resizing a page with form fields has not been tested yet; check such a file before relying on it.
+- Unit tests check the trimming and fitting geometry for every quarter turn and on a real document, and the conversion of each pixel layout. Browser tests in Chrome check trimming on an upright and a turned page, resizing to Letter, that each picture comes out once at its own size with its transparency, and that a redacted page gives none.
+
 ## [1.12.0] - 2026-11-26
 
 Adds Bates numbering, document details, and an optional password for changing a locked file's restrictions.
@@ -24,7 +39,7 @@ Adds Bates numbering, document details, and an optional password for changing a 
 ### Things to know
 - Compressing a single, untouched PDF normally keeps it as it is, bookmarks and all. With document details set, it is rebuilt first so the details can be written in, the same way every other export works, so its bookmarks are not kept.
 - Several keywords are stored as one line, separated by spaces, which is how most PDF readers show them.
-- These three were written by Claude (an AI) and reviewed and released by KnightShift Labs, like the rest of Cornerfold. Unit tests check the wording of Bates numbers, that details are written and nothing else is, and, with the real qpdf, that a permissions password lifts the restrictions and the open password does not. Browser tests run each one end to end in Chrome.
+- Unit tests check the wording of Bates numbers, that details are written and nothing else is, and, with the real qpdf, that a permissions password lifts the restrictions and the open password does not. Browser tests run each one end to end in Chrome.
 
 ## [1.11.1] - 2026-11-26
 
@@ -35,7 +50,7 @@ Fixes pictures being refused when the browser does not report what kind of file 
 - Found by the browser tests that run in Firefox and Safari’s engine (WebKit), a report that does not block a release. A one-off check there showed Firefox and WebKit both decode WebP, BMP, GIF, PNG and JPEG themselves, and that only the WebP in WebKit was refused by Cornerfold.
 
 ### Things to know
-- This was found and fixed by Claude (an AI) and reviewed and released by KnightShift Labs, like the rest of Cornerfold. Unit tests cover the new rule; the fix itself can only be confirmed in Safari’s engine on a machine that has it, and was not yet confirmed there when this was written.
+- Unit tests cover the new rule; the fix itself can only be confirmed in Safari’s engine on a machine that has it, and was not yet confirmed there when this was written.
 
 ## [1.11.0] - 2026-11-26
 
@@ -69,7 +84,7 @@ Adds Protect with password, and a minimum for test coverage.
 ### Things to know
 - Locked files use the PDF 2.0 style of AES-256 password (revision 6). Current readers open them; very old ones may not.
 - The code that wraps qpdf (`@neslinesli93/qpdf-wasm`, ISC licence) has one maintainer, so it is pinned to one exact version. qpdf itself is Apache-2.0, and its notice is in the open-source licences page.
-- This was written by Claude (an AI) and reviewed and released by KnightShift Labs, like the rest of Cornerfold. Tests lock real files with the real qpdf and check that they open only with the right password, including passwords with unusual characters.
+- Tests lock real files with the real qpdf and check that they open only with the right password, including passwords with unusual characters.
 
 ## [1.9.0] - 2026-11-26
 
@@ -83,7 +98,7 @@ Adds Find and redact: search every page for a word and cover the matches.
 - Boxes are placed from the text on the page, then fitted to what is actually drawn there. This is an estimate and can be a little off, so look over every page before you export. A letter or two may show beside a box, or a box may reach a little into a neighbouring word.
 - Only text the page really contains is found. A scan or a photo of text has none, so it is not searched (the dialog says how many pages that applies to); draw a box on it by hand.
 - As before, a page with a redaction is exported as a picture, so its text can no longer be selected or copied.
-- This was written by Claude (an AI) and reviewed and released by KnightShift Labs, like the rest of Cornerfold. The tests check the boxes against the real position of letters in four standard fonts, but not against every font a document might use.
+- The tests check the boxes against the real position of letters in four standard fonts, but not against every font a document might use.
 
 ## [1.8.4] - 2026-11-23
 

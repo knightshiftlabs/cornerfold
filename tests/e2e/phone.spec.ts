@@ -77,6 +77,8 @@ for (const [tool, action] of [
   [/Watermark/, 'Export with watermark'],
   [/Protect with password/, 'Lock and export'],
   [/Document details/, 'Save'],
+  [/Trim or resize/, 'Export trimmed'],
+  [/Pictures in the pages/, 'Save pictures'],
 ] as const) {
   test(`${tool.source.replace(/[\^\\]/g, '')}: the panel fits the screen and its main button can be reached`, async ({ page }) => {
     await page.getByRole('button', { name: 'Tools' }).tap()

@@ -31,6 +31,8 @@ export interface WatermarkOptions {
 export interface Stamps {
   numbers?: NumberOptions
   watermark?: WatermarkOptions
+  /** Trim margins, or fit each page to a paper size (see layout.ts). Done before anything is drawn. */
+  layout?: import('./layout').Layout
 }
 
 export function numberLabel(format: NumberFormat, n: number, total: number, bates: { prefix?: string; digits?: number } = {}) {

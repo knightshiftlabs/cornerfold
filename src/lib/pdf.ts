@@ -223,6 +223,60 @@ export async function renderRedacted(source: Source, index: number, boxes: Box[]
   return { bytes: new Uint8Array(await blob.arrayBuffer()), width: size[0], height: size[1] }
 }
 
+/**
+ * The pictures stored in one page of a PDF, each as a PNG of exactly its own pixels (not as it is drawn on the page:
+ * not scaled, cropped or turned). pdf.js decodes them, so every kind a PDF can hold comes out, with its transparency.
+ * Masks that only shape other drawing are not pictures and are left out, as are tiny ones (see pictures.ts).
+ * `seen` holds pictures already taken from this file, so one used on many pages comes out once.
+ */
+export async function pagePictures(source: Source, index: number, seen: Set<string>) {
+  if (source.kind !== 'pdf') return []
+  const doc = await docs.get(source.id)
+  if (!doc) throw new Error('Document not loaded')
+  const { OPS } = await loadPdfEngine()
+  const { toRgba, worthKeeping } = await import('./pictures')
+  const page = await doc.getPage(index + 1)
+  const out: { png: Uint8Array; width: number; height: number }[] = []
+  try {
+    const list = await page.getOperatorList()
+    type Img = { width: number; height: number; bitmap?: ImageBitmap; data?: Uint8ClampedArray; kind?: number }
+    const get = (id: string) =>
+      new Promise<Img | null>((resolve) => {
+        const store = id.startsWith('g_') ? page.commonObjs : page.objs
+        try {
+          store.get(id, (img: Img) => resolve(img ?? null))
+        } catch {
+          resolve(null)
+        }
+      })
+    for (let i = 0; i < list.fnArray.length; i++) {
+      const op = list.fnArray[i]
+      let img: Img | null = null
+      let key: string | null = null
+      if (op === OPS.paintImageXObject || op === OPS.paintImageXObjectRepeat) {
+        key = list.argsArray[i][0] as string
+        if (seen.has(key)) continue
+        img = await get(key)
+      } else if (op === OPS.paintInlineImageXObject) img = list.argsArray[i][0] as Img
+      if (!img || !worthKeeping(img.width, img.height)) continue
+      if (key) seen.add(key)
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')!
+      if (img.bitmap) ctx.drawImage(img.bitmap, 0, 0)
+      else if (img.data) ctx.putImageData(new ImageData(toRgba(img.kind ?? 3, img.data, img.width, img.height), img.width, img.height), 0, 0)
+      else continue
+      const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'))
+      canvas.width = canvas.height = 0
+      if (blob) out.push({ png: new Uint8Array(await blob.arrayBuffer()), width: img.width, height: img.height })
+    }
+  } finally {
+    page.cleanup()
+  }
+  return out
+}
+
 /** The text on one page, as plain lines. Pages that are pictures (scans, photos) have none. */
 export async function pageText(source: Source, index: number) {
   if (source.kind !== 'pdf') return ''

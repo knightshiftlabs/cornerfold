@@ -29,7 +29,7 @@ export interface Source {
 }
 
 /** The tools that open a panel of their own. */
-export type Tool = 'select' | 'split' | 'paper' | 'preview' | 'images' | 'text' | 'numbers' | 'watermark' | 'sign' | 'protect' | 'details'
+export type Tool = 'select' | 'split' | 'paper' | 'preview' | 'images' | 'text' | 'numbers' | 'watermark' | 'sign' | 'protect' | 'details' | 'layout' | 'pictures'
 
 export const newId = () => crypto.randomUUID()
 

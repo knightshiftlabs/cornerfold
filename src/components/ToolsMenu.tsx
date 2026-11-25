@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from 'react'
 import { createPortal } from 'react-dom'
 import { splitPages } from '../lib/actions'
-import { ArrowDownUp, Palette, CopyPlus, Droplets, FilePlus2, FileText, FlipVertical2, Hash, Images, ListChecks, Lock, Ruler, ScanSearch, Scissors, Shrink, Signature, SquareSplitHorizontal, Tag, Wrench } from 'lucide-react'
+import { ArrowDownUp, Palette, CopyPlus, Droplets, FilePlus2, FileText, FlipVertical2, Hash, Images, ListChecks, Lock, Ruler, ScanSearch, Scissors, Shrink, Signature, Crop, ImageDown, SquareSplitHorizontal, Tag, Wrench } from 'lucide-react'
 import { describePaper } from '../lib/paper'
 import { duplicateSelected, insertBlankPage, reverseOrder, selectBlankPages } from '../lib/pageTools'
 import { useStore } from '../lib/store'
@@ -101,6 +101,12 @@ export function ToolsMenu() {
           run: insertBlankPage,
         },
         {
+          icon: Crop,
+          label: 'Trim or resize…',
+          hint: 'Cut margins, or fit to A4, Letter and more',
+          run: () => openTool('layout'),
+        },
+        {
           icon: ScanSearch,
           label: 'Find blank pages',
           hint: 'Selects them for you to review',
@@ -141,6 +147,12 @@ export function ToolsMenu() {
           label: 'Text…',
           hint: 'Copy or save the words',
           run: () => openTool('text'),
+        },
+        {
+          icon: ImageDown,
+          label: 'Pictures in the pages…',
+          hint: 'The photos and images stored inside',
+          run: () => openTool('pictures'),
         },
       ],
     },
