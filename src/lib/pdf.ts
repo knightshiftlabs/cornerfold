@@ -3,6 +3,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 import type { Source } from './store'
 import { pixelBoxes, type Box } from './redactGeometry'
+import { findInPieces, snapToInk, type FindOptions, type Hit, type Piece, type Raster } from './findText'
 
 /** The app's code couldn't be loaded, usually because a new version was deployed while this tab was open. */
 export class EngineError extends Error {}
@@ -232,6 +233,52 @@ export async function pageText(source: Source, index: number) {
   page.cleanup()
   const { textFromItems } = await import('./text')
   return textFromItems(content.items.filter((i): i is typeof i & { str: string; transform: number[] } => 'str' in i) as never)
+}
+
+let measuring: CanvasRenderingContext2D | null | undefined
+/** How wide text is in the font family pdf.js names for it (or a plain one), in any one unit. */
+const measureText = (str: string, piece: { family?: string }) => {
+  if (measuring === undefined) measuring = document.createElement('canvas').getContext('2d')
+  if (!measuring) return str.length
+  measuring.font = `100px ${piece.family || 'sans-serif'}`
+  return measuring.measureText(str).width
+}
+
+/**
+ * Where words appear on one page, as boxes ready to be redacted. `hasText` says whether the page has any text to
+ * search at all: a scan or a photo has none, however many words can be read on it by eye.
+ */
+export async function pageMatches(source: Source, index: number, query: string, options: FindOptions): Promise<{ hasText: boolean; hits: Hit[] }> {
+  if (source.kind !== 'pdf') return { hasText: false, hits: [] }
+  const doc = await docs.get(source.id)
+  if (!doc) throw new Error('Document not loaded')
+  const page = await doc.getPage(index + 1)
+  try {
+    const vp = page.getViewport({ scale: 1 }) // includes the page's own built-in turn, as marks do
+    const content = await page.getTextContent()
+    const pieces: Piece[] = content.items
+      .filter((i): i is typeof i & { str: string; transform: number[]; width: number; height: number; fontName: string; hasEOL?: boolean } => 'str' in i)
+      .map((i) => ({ str: i.str, transform: i.transform, width: i.width, height: i.height, hasEOL: i.hasEOL, family: content.styles[i.fontName]?.fontFamily }))
+    const hasText = pieces.some((p) => p.str.trim())
+    const toFraction = (x: number, y: number): [number, number] => {
+      const [vx, vy] = vp.convertToViewportPoint(x, y)
+      return [vx / vp.width, vy / vp.height]
+    }
+    const hits = hasText ? findInPieces(pieces, query, options, measureText, toFraction) : []
+    if (hits.some((h) => h.upright)) {
+      // Look at the page itself, so no box ends halfway through a letter.
+      let raster: Raster | null = null
+      await drawPage(source, index, 0, 2000, 'image/jpeg', (ctx, width, height) => {
+        raster = ctx.getImageData(0, 0, width, height)
+      })
+      if (raster) for (const h of hits)
+        if (h.upright)
+          h.boxes = h.boxes.map((b, i) => snapToInk(b, raster!, { left: i === 0 && h.startsWord ? 'word' : 'letter', right: i === h.boxes.length - 1 && h.endsWord ? 'word' : 'letter' }))
+    }
+    return { hasText, hits }
+  } finally {
+    page.cleanup()
+  }
 }
 
 /** A form field on a page, placed as fractions of the page as it appears (before any turn added in Cornerfold). */

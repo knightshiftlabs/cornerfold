@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { Check, ChevronLeft, ChevronRight, LoaderCircle, Minus, PenLine, Plus, CalendarDays, EyeOff, Trash2, Type, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, LoaderCircle, Minus, PenLine, Plus, CalendarDays, EyeOff, Search, Trash2, Type, X } from 'lucide-react'
 import { clamp01, type Mark, type MarkImage } from '../../lib/marks'
 import { placeImage } from '../../lib/paper'
 import { pageFields, pdfPageSize, renderLarge, type FormField } from '../../lib/pdf'
@@ -7,6 +7,7 @@ import { unsupportedCharacters } from '../../lib/stampText'
 import { newId, useStore, type Page } from '../../lib/store'
 import { Button } from '../ui'
 import { SignatureMaker } from './SignatureMaker'
+import { FindRedact } from './FindRedact'
 import { SIGNATURE_NOTE } from '../../lib/signature'
 import { REDACT_NOTE } from '../../lib/redactNote'
 
@@ -68,6 +69,7 @@ export default function FillSign() {
   const [selected, setSelected] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
   const [making, setMaking] = useState(false)
+  const [finding, setFinding] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
   /** A tool waiting for a click on the page to say where its mark goes. */
   const [armed, setArmed] = useState<NewMark | null>(null)
@@ -217,7 +219,7 @@ export default function FillSign() {
   // The editor's own keys: Escape lets go of a mark, then closes; arrows outside a mark change page.
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (making) return
+      if (making || finding) return
       if (e.key === 'Escape') {
         e.preventDefault()
         if (armed) setArmed(null)
@@ -228,7 +230,7 @@ export default function FillSign() {
     }
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)
-  }, [editing, selected, making, armed])
+  }, [editing, selected, making, finding, armed])
 
   const shown = useMemo(() => marks.map((m) => (draft && draft.id === m.id ? draft : m)), [marks, draft])
   const current = shown.find((m) => m.id === selected)
@@ -282,6 +284,10 @@ export default function FillSign() {
         <Button className="border border-line" aria-pressed={armed?.kind === 'redact'} onClick={offer({ kind: 'redact', w: 0.3, h: 0.04 })}>
           <EyeOff />
           Redact
+        </Button>
+        <Button className="border border-line" onClick={() => setFinding(true)}>
+          <Search />
+          Find and redact
         </Button>
         {current && (
           <span className="ml-auto flex items-center gap-1" aria-label="Selected item">
@@ -372,6 +378,16 @@ export default function FillSign() {
         )}
       </div>
 
+      {finding && (
+        <FindRedact
+          onClose={() => setFinding(false)}
+          onAdded={(firstPageId) => {
+            setFinding(false)
+            setPageId(firstPageId)
+            setSelected(null)
+          }}
+        />
+      )}
       {making && (
         <SignatureMaker
           onClose={() => setMaking(false)}

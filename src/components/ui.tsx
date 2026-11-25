@@ -86,7 +86,10 @@ export function Sheet({ title, intro, onClose, children, footer, wide }: { title
           </IconButton>
         </div>
         <div className="mt-5">{children}</div>
-        {footer && <div className="mt-6 flex flex-wrap justify-end gap-2">{footer}</div>}
+        {footer && (
+          // Stays at the foot of the sheet while a long list scrolls, so its buttons never end up out of sight on a phone.
+          <div className="sticky bottom-0 -mx-5 -mb-5 mt-4 flex flex-wrap justify-end gap-2 bg-[var(--glass-bg)] px-5 pb-5 pt-3 sm:-mx-7 sm:-mb-7 sm:px-7 sm:pb-7">{footer}</div>
+        )}
       </div>
     </div>
   )

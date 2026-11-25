@@ -70,6 +70,8 @@ interface State {
   setLockAnswers: (lock: boolean) => void
   /** Replaces one page's marks, as one undoable step. */
   setMarks: (pageId: string, marks: Mark[]) => void
+  /** Adds marks to several pages as one undoable step. */
+  addMarks: (added: Record<string, Mark[]>) => void
 
   addPages: (sources: Source[], pages: Page[]) => void
   /** Adds pages right after the given page, or at the end. */
@@ -166,6 +168,7 @@ export const useStore = create<State>((set, get) => {
     lockAnswers: false,
     setLockAnswers: (lockAnswers) => set({ lockAnswers }),
     setMarks: (pageId, marks) => commit(get().pages.map((p) => (p.id === pageId ? { ...p, marks } : p))),
+    addMarks: (added) => commit(get().pages.map((p) => (added[p.id]?.length ? { ...p, marks: [...(p.marks ?? []), ...added[p.id]] } : p))),
 
     addPages: (sources, pages) => {
       set((s) => ({ sources: { ...s.sources, ...Object.fromEntries(sources.map((x) => [x.id, x])) } }))

@@ -14,7 +14,7 @@ async function redactTopOfPageOne(app: import('./fixtures').App) {
   await app.thumbnails(4)
   await app.tool(/Fill and sign/)
   await expect(editor(page).getByRole('img', { name: 'Page 1' })).toBeVisible({ timeout: 20_000 })
-  await editor(page).getByRole('button', { name: 'Redact' }).click()
+  await editor(page).getByRole('button', { name: 'Redact', exact: true }).click()
   const b = (await stage(page).boundingBox())!
   const at = (fx: number, fy: number) => [b.x + fx * b.width, b.y + fy * b.height] as const
   await page.mouse.click(...at(0.23, 0.08)) // a 30% x 4% box, centred here: 8% to 38% across, 6% to 10% down

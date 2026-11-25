@@ -103,3 +103,17 @@ describe('letting go of signatures and form answers that nothing uses', () => {
     expect(Object.keys(useStore.getState().fieldValues)).toEqual(['b'])
   })
 })
+
+describe('adding marks to several pages at once', () => {
+  it('is one undo step', () => {
+    const s = useStore.getState
+    const mark = (id: string) => ({ id, kind: 'redact' as const, x: 0.1, y: 0.1, w: 0.2, h: 0.05 })
+    s().addMarks({ p1: [mark('m1')], p3: [mark('m2'), mark('m3')] })
+    const count = () => s().pages.map((p) => p.marks?.length ?? 0)
+    expect(count()).toEqual([1, 0, 2])
+    s().undo()
+    expect(count()).toEqual([0, 0, 0])
+    s().redo()
+    expect(count()).toEqual([1, 0, 2])
+  })
+})
