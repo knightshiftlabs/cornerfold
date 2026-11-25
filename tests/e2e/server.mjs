@@ -78,6 +78,10 @@ export function startServer({ root = 'dist', port = 0, headersFile = 'public/_he
   const server = createServer(async (req, res) => {
     const requested = decodeURIComponent(new URL(req.url, 'http://local').pathname)
     const headers = headersFor(rules, requested)
+    // Safari's engine (WebKit) obeys "upgrade-insecure-requests" even for 127.0.0.1, so on this plain-http test server
+    // the app never loads. Only when the Firefox and Safari run is asked for is that one directive left out; the live
+    // site, and every Chromium run, keep the whole policy.
+    if (process.env.CROSS_BROWSER && headers['content-security-policy']) headers['content-security-policy'] = headers['content-security-policy'].replace(/;\s*upgrade-insecure-requests/, '')
     const path = requested.endsWith('/') ? `${requested}index.html` : requested
     // Cloudflare Pages serves /privacy from privacy.html ("pretty URLs").
     const candidates = extname(path) ? [path] : [path, `${path}.html`]

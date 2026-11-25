@@ -57,6 +57,8 @@ test.describe('the site pages', () => {
   test('with nothing chosen, the pages follow the device, dark or light', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' })
     await page.goto('/about.html')
+    // If this browser's own emulation does not report dark, there is nothing for the page to follow: skip, do not fail.
+    test.skip(!(await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches)), 'this browser did not apply the dark colour scheme that was asked for')
     await expect(html(page)).toHaveAttribute('data-theme', 'dark')
     await page.emulateMedia({ colorScheme: 'light' })
     await page.goto('/about.html')
@@ -70,7 +72,7 @@ test.describe('the site pages', () => {
       expect(res.headers()['content-type'], f).toContain('font/woff2')
     }
     await page.goto('/about.html')
-    expect(await page.evaluate(() => [...document.fonts].map((f) => f.family))).toEqual(['Geist Variable', 'Geist Variable'])
+    expect(await page.evaluate(() => [...document.fonts].map((f) => f.family.replace(/"/g, '')))).toEqual(['Geist Variable', 'Geist Variable'])
   })
 
   test('the bar leads to the other pages', async ({ page }) => {

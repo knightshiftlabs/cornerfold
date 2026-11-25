@@ -12,6 +12,8 @@ test.describe('theme', () => {
   test('follows the device, dark or light', async ({ page, app }) => {
     await page.emulateMedia({ colorScheme: 'dark' })
     await app.open()
+    // If this browser's own emulation does not report dark, there is nothing for the app to follow: skip, do not fail.
+    test.skip(!(await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches)), 'this browser did not apply the dark colour scheme that was asked for')
     await expect(html(page)).toHaveAttribute('data-theme', 'dark')
     await page.emulateMedia({ colorScheme: 'light' })
     await expect(html(page)).toHaveAttribute('data-theme', 'light')

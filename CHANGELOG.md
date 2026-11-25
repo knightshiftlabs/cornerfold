@@ -8,12 +8,26 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.11.0] - TBD
+
+A test fix for Safari and Firefox, and a one-line summary for every version below. The app is unchanged.
+
+### Changed
+- Each version in this list now starts with a one-line summary, so you can see what it was about before reading the details.
+
+### Fixed
+- The browser tests that run in Firefox and in Safari's engine (WebKit) had never worked: most of the 178 failures on a first full run were WebKit refusing to load the test copy of the site, because it obeyed the site's "upgrade insecure requests" rule for a plain-http address on the test machine. That one directive is now left out of the test server when those two browsers are run (the live site and the Chromium runs keep the whole policy). Five test assumptions that only held in Chromium were corrected: a font name that Firefox writes with quotes, reading the clipboard, pasting a made-up image, and the dark-colour-scheme tests, which now skip when the browser itself does not report dark. The app did not change.
+
 ## [1.10.1] - 2026-11-26
+
+A test fix; the app is unchanged.
 
 ### Fixed
 - A browser test of the arrow keys in the Appearance panel failed now and then on GitHub (it did on the 1.9.0 release). The app moves focus to the button you just chose one animation frame after the choice, and the test pressed its next key without waiting for that, so on a slow machine the late focus move took the key away. The test now waits for the focus to arrive, as a person would. The app itself did not change.
 
 ## [1.10.0] - 2026-11-26
+
+Adds Protect with password, and a minimum for test coverage.
 
 ### Added
 - Protect with password. A new entry in the Tools menu locks the exported file with a password, using AES-256 encryption. Nobody can open the file without the password, and it works on your device like everything else: nothing is uploaded. You can also ask readers not to allow printing, copying text or editing. Those three are a request that well-behaved PDF readers follow and some programs ignore, so only the password really keeps people out. Cornerfold cannot recover a lost password.
@@ -30,6 +44,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.9.0] - 2026-11-26
 
+Adds Find and redact: search every page for a word and cover the matches.
+
 ### Added
 - Find and redact. In the Fill and sign editor, a new "Find and redact" button searches every page for a word or phrase and lists each match with the words around it. Tick the ones you want covered and Cornerfold adds a redaction box over each. It can match capitals exactly and whole words only, copes with a phrase that runs over a line break, and skips a match that already has a box on it. Adding the boxes is one step you can undo. Nothing is applied until you export, as with boxes you draw yourself.
 - The dialog's buttons now stay at the foot of every pop-up sheet while a long list scrolls, so they cannot slip off a small screen.
@@ -42,6 +58,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.8.4] - 2026-11-23
 
+Fixes the home screen being wider than the smallest phones.
+
 ### Fixed
 - On the smallest phones (320 pixels wide) the home screen was wider than the screen, so the page could be dragged sideways. The top bar's three words (What's new, Privacy, Appearance) did not fit beside the logo. On phones the bar now shows just the Appearance button, and Privacy has joined the links at the bottom of the home screen (the version number there already opens What's new).
 - On those phones, while pages dropped onto the desk after you added a file, they briefly stuck out past the screen edge and made the page wobble sideways for about a second. Nothing can stick out sideways there any more.
@@ -49,10 +67,14 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.8.3] - 2026-11-23
 
+A test change that turned out to be wrong; 1.8.4 corrects it.
+
 ### Fixed
 - A browser test of the toolbar on a 320-pixel phone screen sometimes failed on GitHub for no real reason: it measured the page in the instant after the screen was resized, before the page had finished re-laying itself out. It now keeps measuring until the page settles. A toolbar that really sticks out still fails it. This stops the occasional failure emails; nothing changes in the app.
 
 ## [1.8.2] - 2026-11-23
+
+Words only: the site now says plainly that Cornerfold is made with AI, and names who runs it.
 
 ### Changed
 - Honesty about how Cornerfold is made. The About page, Check our claims, the privacy policy, the terms, the README and CONTRIBUTING now say plainly that Cornerfold is AI-coded (most of its code is written by Claude, an AI model from Anthropic, and reviewed and released by KnightShift Labs), and that it has not had an independent security audit. Check our claims has a new section on what its checks do not cover. The About page no longer says you never have to trust anything, and says the byte-for-byte build needs the same tool versions.
@@ -60,10 +82,14 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.8.1] - 2026-11-23
 
+Fixes the automatic check of the live site; the app is unchanged.
+
 ### Fixed
 - The automatic check of the live site no longer asks for new files before a release has finished going up. Asking early made the check fail, and could leave the site's cache holding a page where a script should be. It now waits for the home page to switch over first, and says which file differs if one does.
 
 ## [1.8.0] - 2026-11-23
+
+Adds Redact, and published checksums so a download can be checked.
 
 ### Added
 - Redact. In Fill and sign, choose Redact, click where the box should go, then drag its corner to cover what must be hidden. When you export, each redacted page becomes a picture with the box burned into the pixels, so the covered text is removed for good, not just hidden under a black shape. This applies to every export: merge, split, compress, page numbers, watermarks and saving pages as images. Redacted pages lose their selectable text, and saving text skips them.
@@ -74,6 +100,8 @@ This file is the source for the public page at /changes.html, which is generated
 - Cornerfold is now free software under the GNU Affero General Public License (AGPL-3.0 or later). You may use, study, change and share it; if you run a changed version for others, you must share its source too. See LICENSE and CONTRIBUTING.md. Cornerfold itself is unchanged: it still works the same, and nothing about how your files are handled has changed.
 
 ## [1.7.0] - 2026-11-23
+
+Stops very large pictures and long exports from freezing or crashing the tab.
 
 ### Fixed
 - A picture or signature photo with an enormous pixel size (a "decompression bomb") could freeze or crash the tab. Cornerfold now reads the size from the file's header and refuses a picture over 150 megapixels with a clear message, before decoding it, and keeps the total being decoded at once within a safe limit. Other files added with it are still added.
@@ -90,6 +118,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.6.0] - 2026-11-23
 
+New versions arrive without a hard refresh, and the other pages now look like the app.
+
 ### Added
 - A new version now reaches you without a hard refresh. When one is ready, Cornerfold reloads into it by itself if no files are open. If files are open, a small notice asks first, because a reload closes them: choose Reload now when you are ready, or Later.
 - The site checks for a new version every half hour and whenever you come back to the tab.
@@ -103,6 +133,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.5.2] - 2026-11-23
 
+Three small fixes, none of them visible in everyday use.
+
 ### Fixed
 - The daily check of the live site could miss a script from another website on a page that also had a canonical link. It now reads each tag on its own, and also catches addresses without a scheme, srcset images and styles. New tests try to sneak such things past it.
 - A signature photo's preview no longer leaves a small picture in memory every time the sheet redraws.
@@ -115,11 +147,15 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.5.1] - 2026-11-23
 
+Switches off our host’s network error reports and tightens some wording.
+
 ### Changed
 - Our host's network error reports, which asked your browser to send Cloudflare a short report when a page failed to load, are now switched off. The daily check of the live site fails if they ever come back, and the privacy policy and Check our claims say so.
 - Check our claims: shorter, plainer wording, with the same meaning.
 
 ## [1.5.0] - 2026-11-23
+
+Adds Appearance (themes, accents, desks, sizes) and a new look throughout.
 
 ### Added
 - Appearance, a new panel with over a dozen choices: Light, Dark, Midnight (true black), Paper, or follow your device; seven accent colours; four desks (Graphite, Slate, Linen, Felt); bright, soft or warm paper; flat, soft or lifted page shadows; how chosen pages look (a folded corner, a tick or a ring); sharp, soft or round corners; compact, calm or airy spacing; how frosted the panels are; page size; text size; calm or no animation; higher contrast; keyboard hints; and an optional soft tick when a page lands.
@@ -139,6 +175,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.4.0] - 2026-11-13
 
+Adds Fill and sign: forms, signatures, text, ticks and dates.
+
 ### Added
 - Fill and sign, in the Tools menu. Fill in PDF forms right on the page: text boxes, tick boxes, radio buttons and dropdowns. When exporting, you can lock the answers in, so they can't be changed.
 - Sign with a signature you draw with your finger, a mouse or a pen, type in a handwriting style, or take from a photo of your signature on paper, with the paper made see-through. Place it, move it, resize it, and reuse it on other pages.
@@ -155,6 +193,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.3.2] - 2026-11-13
 
+Adds the Check our claims page and a daily check of the live site.
+
 ### Added
 - A Check our claims page: every promise Cornerfold makes, how it is kept, the automatic test that fails if it stops being true, and how you can check it yourself.
 - A daily check of the live site, also run after every change: it builds the public source code and fails unless cornerfold.org serves exactly those files, loads nothing from any other website, and sends the right security headers.
@@ -169,6 +209,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.3.1] - 2026-11-13
 
+Fixes Save as images on the live site, and clearer messages.
+
 ### Fixed
 - Save as images failed on cornerfold.org: the site's own security settings, which block a page from fetching data, stopped one step of it. It now works. Found by new tests that run Cornerfold in a real browser under the site's real security settings.
 
@@ -177,6 +219,8 @@ This file is the source for the public page at /changes.html, which is generated
 - Files that can't be used are named in the message, such as “notes.txt isn’t a PDF or an image.”, instead of “That file isn’t a PDF or an image.”
 
 ## [1.3.0] - 2026-11-13
+
+Adds the Tools menu, page selection by number, and duplicate, reverse and blank pages.
 
 ### Added
 - A Tools menu, which holds everything below. On phones it opens from the bottom of the screen.
@@ -202,6 +246,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.2.1] - 2026-11-07
 
+Fixes memory use when compressing or adding many files.
+
 ### Fixed
 - Compressing a long scanned document no longer uses more memory with every page. In our tests, a 24-page scan took the browser from about 430 MB to over 1.4 GB, and it held on to it afterwards, which could crash the tab on a phone. Now it stays under 1 GB, and adding pages barely changes it. The compressed result is exactly the same as before.
 - Adding many files at once no longer reads them all at the same time, which could use a lot of memory. They are read a few at a time, and the pages still appear in the order you added the files.
@@ -209,6 +255,8 @@ This file is the source for the public page at /changes.html, which is generated
 - Merging two copies of the same form, such as two applicants’ forms, no longer links their fields. The later copy’s fields are numbered (name, name_2), so typing in one no longer changes the other.
 
 ## [1.2.0] - 2026-11-06
+
+Password-protected and restricted PDFs can now be opened.
 
 ### Added
 - Password-protected PDFs can now be opened. When you add one, Cornerfold asks for its password, opens a copy on your device, and from then on it works like any other file: merge, rearrange, split, rotate, compress. The password is used only on your device to open the file, and is never stored or sent. The copy, and anything you export from it, has no password and none of the original’s editing or printing restrictions.
@@ -220,6 +268,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.1.11] - 2026-11-06
 
+Photos turned into PDFs no longer carry their camera and location details.
+
 ### Security
 - Photos you turn into PDFs no longer carry their hidden details into the PDF: the camera or phone model, the date and time, and the GPS location where the picture was taken. For JPEGs the details are removed without re-encoding, so the picture’s quality is unchanged. PDFs you made with earlier versions from such photos may still contain that information.
 
@@ -227,6 +277,8 @@ This file is the source for the public page at /changes.html, which is generated
 - Privacy policy: says exactly what happens to a photo’s hidden details.
 
 ## [1.1.10] - 2026-11-06
+
+Adds Report a problem, and compressing leaves a file alone if it already fits.
 
 ### Added
 - A “Report a problem” link, on the home screen and in the privacy badge. It opens a draft email to hello@cornerfold.org with Cornerfold’s version and your browser’s name filled in. You can edit or delete anything, and nothing is sent unless you press send.
@@ -242,6 +294,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.1.9] - 2026-11-05
 
+Protects against a PDF that claims to hold an enormous image.
+
 ### Security
 - Compressing a PDF that claims to contain an enormous image no longer risks using up your device’s memory. Such images are now skipped, and no file can make Cornerfold unpack more data than its image declares.
 
@@ -249,6 +303,8 @@ This file is the source for the public page at /changes.html, which is generated
 - Release history: the 1.0.0 notes now describe the security policy the same way the privacy policy does.
 
 ## [1.1.8] - 2026-11-02
+
+The source code is now public, with a security policy.
 
 ### Added
 - Cornerfold’s source code is now public on GitHub, so anyone can check exactly what it does with files.
@@ -261,15 +317,21 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.1.7] - 2026-11-01
 
+Removes one header the site sent; nothing about your files changed.
+
 ### Removed
 - The site no longer sends the `X-Robots-Tag: noai, noimageai` header. Nothing about how Cornerfold handles your files has changed.
 
 ## [1.1.6] - 2026-11-01
 
+Privacy policy wording only.
+
 ### Changed
 - Privacy policy: describes more precisely what the site’s security policy protects against, and that the first safeguard is Cornerfold’s own code never sending files anywhere.
 
 ## [1.1.5] - 2026-11-01
+
+Phones and tablets get the stack of pages on the home screen.
 
 ### Changed
 - Phones and tablets now show the stack of pages on the home screen, with its landing animation. On phones it sits above the headline, sized so the Choose files button stays on screen even on small phones; tablets in portrait use the same layout with a larger stack.
@@ -279,10 +341,14 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.1.4] - 2026-10-31
 
+Fixes the custom size box misreading “5 5”.
+
 ### Fixed
 - The custom size box no longer reads “5 5” as 55 KB; it asks for a proper size instead. Found by the new automated tests.
 
 ## [1.1.3] - 2026-10-31
+
+Warns about signed PDFs, and keeps merged forms fillable.
 
 ### Added
 - A warning when you add a digitally signed PDF: any change, even compressing, makes the signature invalid, though the pages look the same.
@@ -302,6 +368,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.1.2] - 2026-10-31
 
+Adds the About page and sharper privacy wording.
+
 ### Added
 - An About page: why Cornerfold exists, how it works without seeing your files, and who makes it.
 
@@ -312,6 +380,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.1.1] - 2026-10-31
 
+Cornerfold moves to cornerfold.org.
+
 ### Changed
 - Cornerfold has its own address: cornerfold.org.
 - Contact address is now hello@cornerfold.org.
@@ -321,6 +391,8 @@ This file is the source for the public page at /changes.html, which is generated
 - Added a security.txt file, so anyone who finds a vulnerability knows how to report it: security@cornerfold.org.
 
 ## [1.1.0] - 2026-10-31
+
+Adds Compress, including fitting under a size limit.
 
 ### Added
 - Compress PDFs. Choose Light, Balanced or Smallest and see each one’s exact size before you download, not a guess.
@@ -341,6 +413,8 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [1.0.1] - 2026-10-31
 
+Adds the terms, the licences page and the version number.
+
 ### Added
 - Terms of use.
 - Open-source licenses page listing every third-party package Cornerfold ships with, generated on every build.
@@ -350,6 +424,8 @@ This file is the source for the public page at /changes.html, which is generated
 - Privacy policy: explains how browser “Do Not Track” and Global Privacy Control signals are handled, and covers the UK GDPR alongside the EU GDPR and India’s DPDP Act.
 
 ## [1.0.0] - 2026-10-31
+
+The first release: merge, split, reorder, rotate and delete pages, and turn images into PDFs.
 
 First public release.
 

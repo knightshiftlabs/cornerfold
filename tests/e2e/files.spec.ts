@@ -36,7 +36,8 @@ test('dropping files onto the page adds them, with a drop target while dragging'
   await app.thumbnails(5)
 })
 
-test('pasting an image adds it as a page', async ({ page, app }) => {
+test('pasting an image adds it as a page', async ({ page, app, browserName }) => {
+  test.skip(browserName === 'firefox', 'Firefox ignores the clipboard data given to a made-up paste event, so this test cannot paste there')
   const file = inPage('photo.jpg', 'image/jpeg')
   await page.evaluate((f) => {
     const dt = new DataTransfer()

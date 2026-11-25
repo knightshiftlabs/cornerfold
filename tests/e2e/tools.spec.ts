@@ -121,8 +121,9 @@ test('Save as images: one page as a PNG, on white paper rather than see-through'
   expect([...ctx.getImageData(2, 2, 1, 1).data]).toEqual([255, 255, 255, 255])
 })
 
-test('Extract text: reads the words, says which pages have none, copies and saves them', async ({ page, context, app }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+test('Extract text: reads the words, says which pages have none, copies and saves them', async ({ page, context, app, browserName }) => {
+  // Only Chromium lets a test grant, and then read, the clipboard; the other engines are checked for everything else.
+  if (browserName === 'chromium') await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await app.tool(/^Text/)
   await app.dialog().getByRole('button', { name: 'Extract text' }).click()
   await expect(app.dialog().getByRole('status')).toContainText('Text found on 2 of 4 pages. 2 pages have no text', { timeout: 30_000 })
@@ -131,7 +132,7 @@ test('Extract text: reads the words, says which pages have none, copies and save
   expect(text).toContain('--- Page 2 ---\n\n(No text on this page.)')
   await app.dialog().getByRole('button', { name: 'Copy' }).click()
   await expect(app.dialog().getByRole('button', { name: 'Copied' })).toBeVisible()
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(text)
+  if (browserName === 'chromium') expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(text)
   const saved = await app.download(() => app.dialog().getByRole('button', { name: 'Save as .txt' }).click())
   expect([saved.name, new TextDecoder().decode(saved.bytes)]).toEqual(['report.txt', text])
 })
