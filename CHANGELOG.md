@@ -8,6 +8,21 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.10.0] - TBD
+
+### Added
+- Protect with password. A new entry in the Tools menu locks the exported file with a password, using AES-256 encryption. Nobody can open the file without the password, and it works on your device like everything else: nothing is uploaded. You can also ask readers not to allow printing, copying text or editing. Those three are a request that well-behaved PDF readers follow and some programs ignore, so only the password really keeps people out. Cornerfold cannot recover a lost password.
+- The locking is done by qpdf, a widely used PDF library, compiled to WebAssembly (about 1.3 MB, 450 KB compressed). It is downloaded only when you lock a file, and it is kept for offline use like the rest of the app. To allow WebAssembly the site's security policy now says `'wasm-unsafe-eval'` for scripts. That permits WebAssembly and nothing else; scripts still cannot use `eval`.
+- A minimum for test coverage. The tests now fail if the share of the code in `src/lib` that they run drops below a set level, so new code cannot quietly go untested. The level is the current one, rounded down, and is meant to be raised over time.
+
+### Fixed
+- A browser test of the password prompt for opening locked files failed now and then on GitHub for a real reason in the test: a wrong password is refused within a few milliseconds, sometimes before the test looked for the "Checking" button. The test now watches the page as it changes, so it sees the button however quick the answer is. The app itself did not change.
+
+### Things to know
+- Locked files use the PDF 2.0 style of AES-256 password (revision 6). Current readers open them; very old ones may not.
+- The code that wraps qpdf (`@neslinesli93/qpdf-wasm`, ISC licence) has one maintainer, so it is pinned to one exact version. qpdf itself is Apache-2.0, and its notice is in the open-source licences page.
+- This was written by Claude (an AI) and reviewed and released by KnightShift Labs, like the rest of Cornerfold. Tests lock real files with the real qpdf and check that they open only with the right password, including passwords with unusual characters.
+
 ## [1.9.0] - 2026-11-26
 
 ### Added

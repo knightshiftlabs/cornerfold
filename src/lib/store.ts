@@ -28,7 +28,7 @@ export interface Source {
 }
 
 /** The tools that open a panel of their own. */
-export type Tool = 'select' | 'split' | 'paper' | 'preview' | 'images' | 'text' | 'numbers' | 'watermark' | 'sign'
+export type Tool = 'select' | 'split' | 'paper' | 'preview' | 'images' | 'text' | 'numbers' | 'watermark' | 'sign' | 'protect'
 
 export const newId = () => crypto.randomUUID()
 

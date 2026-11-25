@@ -14,11 +14,21 @@ test('a locked PDF asks for its password, explains a wrong one, and opens with t
   await expect(field).toBeFocused()
   await expect(dialog.getByRole('button', { name: 'Unlock' })).toBeDisabled()
   await field.fill('wrong')
+  // Watch the page itself from here on. A wrong password can be refused within a few milliseconds, faster than a test
+  // can look, so looking for the "Checking" button at one moment is a race; a watcher sees every change as it happens.
+  await page.evaluate(() => {
+    const seen = ((window as unknown as { __seen: { checking: boolean; dialogGone: boolean } }).__seen = { checking: false, dialogGone: false })
+    new MutationObserver(() => {
+      const d = document.querySelector('[role="dialog"]')
+      if (!d) seen.dialogGone = true
+      else if ([...d.querySelectorAll('button')].some((b) => /Checking/.test(b.textContent ?? '') && b.disabled)) seen.checking = true
+    }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true })
+  })
   await field.press('Enter')
-  // The dialog stays put while the password is checked, rather than vanishing and coming back.
-  await expect(dialog).toBeVisible()
-  await expect(dialog.getByRole('button', { name: /Checking/ })).toBeDisabled()
   await expect(dialog.getByRole('alert')).toBeVisible({ timeout: 30_000 })
+  // The dialog stayed put while the password was checked, rather than vanishing and coming back, and said it was checking.
+  const seen = await page.evaluate(() => (window as unknown as { __seen: { checking: boolean; dialogGone: boolean } }).__seen)
+  expect(seen).toEqual({ checking: true, dialogGone: false })
   await expect(field).toHaveAttribute('aria-invalid', 'true')
   await expect(field).toHaveValue('') // a fresh try: the field is empty and ready
   await expect(field).toBeFocused()

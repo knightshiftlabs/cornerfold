@@ -19,7 +19,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npm run test:coverage
       - run: npm run build
 
   # A short fuzz run with a fixed seed: the same corrupted files every time, so a red cross here is a real regression

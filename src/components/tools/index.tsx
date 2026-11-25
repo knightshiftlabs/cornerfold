@@ -1,6 +1,6 @@
 // The tool panels. Loaded only when a tool is first opened, so they cost nothing on the first screen.
 import { useMemo, useState } from 'react'
-import { collectText, exportStamped, saveImages } from '../../lib/exporters'
+import { collectText, exportProtected, exportStamped, saveImages } from '../../lib/exporters'
 import { labelsFor, unsupportedCharacters, type NumberFormat, type NumberOptions, type NumberPosition, type WatermarkOptions } from '../../lib/stampText'
 import { download } from '../../lib/actions'
 import { describePaper, placeImage, type Paper } from '../../lib/paper'
@@ -23,6 +23,7 @@ export default function Tools() {
   if (tool === 'text') return <TextPanel />
   if (tool === 'numbers') return <NumbersPanel />
   if (tool === 'watermark') return <WatermarkPanel />
+  if (tool === 'protect') return <ProtectPanel />
   return null
 }
 
@@ -518,6 +519,80 @@ function WatermarkPanel() {
           <Choices<'0.12' | '0.2' | '0.35'> label="Strength" value={strength} onChange={setStrength} options={[{ value: '0.12', label: 'Faint' }, { value: '0.2', label: 'Medium' }, { value: '0.35', label: 'Strong' }]} />
         </div>
       </div>
+    </Sheet>
+  )
+}
+
+function ProtectPanel() {
+  const close = useStore((s) => s.closeTool)
+  const [password, setPassword] = useState('')
+  const [again, setAgain] = useState('')
+  const [shown, setShown] = useState(false)
+  const [blockPrinting, setBlockPrinting] = useState(false)
+  const [blockCopying, setBlockCopying] = useState(false)
+  const [blockEditing, setBlockEditing] = useState(false)
+  const [working, setWorking] = useState(false)
+  const mismatch = !shown && again !== '' && again !== password
+  const ready = password !== '' && (shown || password === again) && !working
+
+  const go = async () => {
+    if (!ready) return
+    setWorking(true)
+    const ok = await exportProtected({ password, blockPrinting, blockCopying, blockEditing })
+    setWorking(false)
+    if (ok) close()
+  }
+
+  return (
+    <Sheet
+      title="Protect with password"
+      intro="The exported file is locked with AES-256 encryption. Nobody can open it without the password, and it never leaves your device."
+      onClose={close}
+      footer={
+        <>
+          <Button onClick={close}>Cancel</Button>
+          <Button variant="primary" disabled={!ready} onClick={go}>
+            {working ? 'Locking…' : 'Lock and export'}
+          </Button>
+        </>
+      }
+    >
+      <form
+        className="space-y-5"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void go()
+        }}
+      >
+        <Field id="protect-password" label="Password to open the file" hint="Cornerfold cannot recover it. If it is lost, so is the file’s content.">
+          <TextInput id="protect-password" data-autofocus type={shown ? 'text' : 'password'} autoComplete="new-password" value={password} onInput={(e) => setPassword(e.currentTarget.value)} />
+        </Field>
+        {!shown && (
+          <Field id="protect-again" label="Type it again" error={mismatch ? 'The two passwords are different.' : null}>
+            <TextInput id="protect-again" type="password" autoComplete="new-password" aria-invalid={mismatch} aria-describedby="protect-again-note" value={again} onInput={(e) => setAgain(e.currentTarget.value)} />
+          </Field>
+        )}
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={shown} onChange={(e) => setShown(e.currentTarget.checked)} className="size-4 accent-[var(--ink)]" />
+          Show the password
+        </label>
+        <fieldset>
+          <legend className="text-sm font-semibold">Ask readers not to allow</legend>
+          <div className="mt-2 space-y-1.5 text-sm">
+            {([
+              ['Printing', blockPrinting, setBlockPrinting],
+              ['Copying text', blockCopying, setBlockCopying],
+              ['Editing', blockEditing, setBlockEditing],
+            ] as const).map(([label, on, set]) => (
+              <label key={label} className="flex items-center gap-2">
+                <input type="checkbox" checked={on} onChange={(e) => set(e.currentTarget.checked)} className="size-4 accent-[var(--ink)]" />
+                {label}
+              </label>
+            ))}
+          </div>
+          <p className="mt-2 text-sm text-muted">These are a request: well-behaved PDF readers follow them, but some programs ignore them. Only the password keeps people out.</p>
+        </fieldset>
+      </form>
     </Sheet>
   )
 }

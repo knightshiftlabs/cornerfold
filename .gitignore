@@ -24,3 +24,4 @@ tests/fuzz/failures/
 # Browser test results and the documents made for them
 test-results/
 playwright-report/
+coverage/

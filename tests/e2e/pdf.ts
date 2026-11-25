@@ -73,3 +73,16 @@ export async function inkAt(bytes: Uint8Array, points: [number, number][], pageN
     return false
   })
 }
+
+/** Opens a PDF with pdf.js, with or without a password: the page-1 text, or the reason it would not open. */
+export async function openWith(bytes: Uint8Array, password?: string) {
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+  try {
+    const doc = await pdfjs.getDocument({ data: bytes.slice(), password, isEvalSupported: false, verbosity: 0 }).promise
+    const text = (await (await doc.getPage(1)).getTextContent()).items.map((i) => ('str' in i ? i.str : '')).join(' ')
+    await doc.destroy()
+    return text
+  } catch (e) {
+    return (e as Error).name
+  }
+}

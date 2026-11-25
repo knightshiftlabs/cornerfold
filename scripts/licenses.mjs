@@ -59,6 +59,8 @@ for (const [key, { pkg, dir }] of [...found].sort(([a], [b]) => a.localeCompare(
   if (id === 'UNKNOWN' && !files.length) unknown.push(key)
   parts.push('', rule, `${key}`, `License: ${id}`, homepage(pkg) && `Source: ${homepage(pkg)}`, rule)
   for (const f of files) parts.push('', readFileSync(join(dir, f), 'utf8').trim())
+  // The engine inside this package is QPDF, which is Apache-2.0 and needs its own notice as well.
+  if (pkg.name === '@neslinesli93/qpdf-wasm') parts.push('', readFileSync(join(root, 'scripts', 'notices', 'qpdf-apache-2.0.txt'), 'utf8').trim())
   if (!files.length) parts.push('', `(No license file shipped with this package. Declared license: ${id}.)`)
 }
 writeFileSync(join(root, 'public', 'licenses.txt'), parts.filter((x) => x !== '').join('\n').replace(/\n(={72})\n/g, '\n\n$1\n') + '\n')

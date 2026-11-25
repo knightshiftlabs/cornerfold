@@ -7,6 +7,7 @@ import { pageText, renderPageImage } from './pdf'
 import { hasRedactions } from './marks'
 import { useStore } from './store'
 import { combineText } from './text'
+import type { ProtectOptions } from './protect'
 import type { Stamps } from './stampText'
 
 const count = (n: number, noun: string) => `${n} ${n === 1 ? noun : `${noun}s`}`
@@ -62,6 +63,29 @@ export async function collectText() {
     parts.push(await pageText(st.sources[p.sourceId], p.index).then((text) => ({ page: i + 1, text }), () => ({ page: i + 1, text: '', failed: true })))
   }
   return { ...combineText(parts), total: list.length, name: `${baseName(list)}.txt` }
+}
+
+/** Exports (the selection, or all) locked with a password. Redactions and filled-in answers are applied first, as for any export. */
+export async function exportProtected(options: ProtectOptions) {
+  const st = useStore.getState()
+  const list = targets()
+  if (st.busy || !list.length) return false
+  const base = baseName(list)
+  const name = `${base === 'merged' ? 'merged' : base}-protected.pdf`
+  st.setBusy('Exporting')
+  try {
+    const [file] = (await runJob('merge', list, name)).files
+    st.setBusy('Locking with the password')
+    const { protectPdf } = await import('./protect')
+    download(await protectPdf(file.bytes, options), name, 'application/pdf')
+    st.notify(`Exported ${name}, locked with your password`)
+    return true
+  } catch (e) {
+    st.notify(`Couldn’t lock the file: ${message(e)}`, { tone: 'error' })
+    return false
+  } finally {
+    useStore.getState().setBusy(null)
+  }
 }
 
 /** Exports (the selection, or all) with page numbers or a watermark drawn on. The document itself is not changed. */

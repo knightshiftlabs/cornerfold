@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from 'react'
 import { createPortal } from 'react-dom'
 import { splitPages } from '../lib/actions'
-import { ArrowDownUp, Palette, CopyPlus, Droplets, FilePlus2, FileText, FlipVertical2, Hash, Images, ListChecks, Ruler, ScanSearch, Scissors, Shrink, Signature, SquareSplitHorizontal, Wrench } from 'lucide-react'
+import { ArrowDownUp, Palette, CopyPlus, Droplets, FilePlus2, FileText, FlipVertical2, Hash, Images, ListChecks, Lock, Ruler, ScanSearch, Scissors, Shrink, Signature, SquareSplitHorizontal, Wrench } from 'lucide-react'
 import { describePaper } from '../lib/paper'
 import { duplicateSelected, insertBlankPage, reverseOrder, selectBlankPages } from '../lib/pageTools'
 import { useStore } from '../lib/store'
@@ -42,6 +42,10 @@ export function ToolsMenu() {
       name: 'Appearance',
       phoneOnly: true,
       items: [{ icon: Palette, label: 'Appearance…', hint: 'Theme, accent and more', phoneOnly: true, run: () => usePrefs.getState().setOpen(true) }],
+    },
+    {
+      name: 'Protect',
+      items: [{ icon: Lock, label: 'Protect with password…', hint: 'Lock the exported file', run: () => openTool('protect') }],
     },
     {
       name: 'Sign',

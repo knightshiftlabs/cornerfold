@@ -27,6 +27,13 @@ export default defineConfig({
     hookTimeout: 60_000,
     pool: 'forks', // each file gets a clean process, since the worker sets globals
     // Libraries that import React must be bundled through the Preact alias, not loaded as-is.
+    coverage: {
+      provider: 'v8',
+      include: ['src/lib/**/*.ts'],
+      reporter: ['text-summary'],
+      // The share of src/lib the tests run, at the time this was set, rounded down (75.4, 71.9, 75.4, 77.2). Raise it as it grows.
+      thresholds: { statements: 75, branches: 71, functions: 75, lines: 77 },
+    },
     server: { deps: { inline: ['zustand', /@dnd-kit/, 'lucide-react'] } },
   },
 })

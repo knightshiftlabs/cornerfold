@@ -30,7 +30,8 @@ export default defineConfig({
       },
       workbox: {
         clientsClaim: true,
-        globPatterns: ['**/*.{js,mjs,css,html,svg,png,woff2,txt}'],
+        // The locking engine (.wasm) is cached too, so Protect with password works offline like everything else.
+        globPatterns: ['**/*.{js,mjs,css,html,svg,png,woff2,txt,wasm}'],
         // The link-preview image is for chat apps and social sites, not for the app itself.
         globIgnores: ['og.png'],
         // pdf.js worker is ~1 MB; cache it so the app works fully offline.
