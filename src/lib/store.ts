@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { DocDetails } from './details'
 import { arrayMove } from '@dnd-kit/sortable'
 import { DEFAULT_PAPER, type Paper } from './paper'
 import type { FieldValue, Mark, MarkImage } from './marks'
@@ -28,7 +29,7 @@ export interface Source {
 }
 
 /** The tools that open a panel of their own. */
-export type Tool = 'select' | 'split' | 'paper' | 'preview' | 'images' | 'text' | 'numbers' | 'watermark' | 'sign' | 'protect'
+export type Tool = 'select' | 'split' | 'paper' | 'preview' | 'images' | 'text' | 'numbers' | 'watermark' | 'sign' | 'protect' | 'details'
 
 export const newId = () => crypto.randomUUID()
 
@@ -68,6 +69,9 @@ interface State {
   /** Fill and sign: turn form answers into plain page content when exporting. */
   lockAnswers: boolean
   setLockAnswers: (lock: boolean) => void
+  /** Document details to write into every exported PDF, or null for none (the default). Kept only in this tab. */
+  details: DocDetails | null
+  setDetails: (details: DocDetails | null) => void
   /** Replaces one page's marks, as one undoable step. */
   setMarks: (pageId: string, marks: Mark[]) => void
   /** Adds marks to several pages as one undoable step. */
@@ -167,6 +171,8 @@ export const useStore = create<State>((set, get) => {
     addMarkImage: (image) => set((s) => ({ markImages: { ...s.markImages, [image.id]: image } })),
     lockAnswers: false,
     setLockAnswers: (lockAnswers) => set({ lockAnswers }),
+    details: null,
+    setDetails: (details) => set({ details }),
     setMarks: (pageId, marks) => commit(get().pages.map((p) => (p.id === pageId ? { ...p, marks } : p))),
     addMarks: (added) => commit(get().pages.map((p) => (added[p.id]?.length ? { ...p, marks: [...(p.marks ?? []), ...added[p.id]] } : p))),
 

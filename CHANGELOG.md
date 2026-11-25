@@ -8,6 +8,24 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.12.0] - TBD
+
+Adds Bates numbering, document details, and an optional password for changing a locked file's restrictions.
+
+### Added
+- Bates numbers, a new style in Page numbers: a prefix you choose and a number padded with zeros to 4, 6 or 8 digits, such as ACME-000041, the way legal and evidence bundles are numbered. The prefix can use Latin letters, numbers and common symbols, like watermarks; the panel says so if you type something it can't draw.
+- Document details, in the Tools menu: a title, author, subject and keywords that Cornerfold writes into every PDF you export, including split parts, compressed files and locked ones, until you clear them. Only the ones you fill in are written. By default nothing changes: Cornerfold still writes no details at all and carries none over from your files. The details are kept only in the open tab.
+- Protect with password can now set a second, permissions password. Anyone with it can open the file and lift the restrictions on printing, copying and editing. It is offered only when you tick a restriction, and it has to differ from the password that opens the file. Without it, as before, nobody can change the restrictions afterwards, not even you.
+
+### Changed
+- The README now says that the browser tests also run in Firefox and in Safari's engine, as a report that does not block a release, and which two things there are checked by hand instead.
+- The privacy policy now mentions the one exception to "exported files carry no document properties": details you type yourself in Document details.
+
+### Things to know
+- Compressing a single, untouched PDF normally keeps it as it is, bookmarks and all. With document details set, it is rebuilt first so the details can be written in, the same way every other export works, so its bookmarks are not kept.
+- Several keywords are stored as one line, separated by spaces, which is how most PDF readers show them.
+- These three were written by Claude (an AI) and reviewed and released by KnightShift Labs, like the rest of Cornerfold. Unit tests check the wording of Bates numbers, that details are written and nothing else is, and, with the real qpdf, that a permissions password lifts the restrictions and the open password does not. Browser tests run each one end to end in Chrome.
+
 ## [1.11.1] - 2026-11-26
 
 Fixes pictures being refused when the browser does not report what kind of file they are.

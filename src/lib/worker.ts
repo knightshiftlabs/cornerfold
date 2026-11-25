@@ -8,6 +8,8 @@ import type { FieldValue, Mark, MarkImage } from './marks'
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFObjectCopier, PDFRef, PDFString, degrees, type PDFImage, type PDFPage, PDFTextField, PDFCheckBox, PDFRadioGroup, PDFDropdown, PDFOptionList } from '@cantoo/pdf-lib'
 import { zipSync } from 'fflate'
 import { checkZipBudget } from './exportBudget'
+import type { DocDetails } from './details'
+import { writeDetails } from './detailsWrite'
 import { Compressor, PRESETS, budgetsFor, type Codec } from './compress'
 
 interface WorkerSource {
@@ -36,6 +38,8 @@ interface Recipe {
   fields?: Record<string, Record<string, FieldValue>>
   /** Turn form fields into plain page content, so answers can't be changed. */
   flatten?: boolean
+  /** Title, author, subject and keywords the person chose to add. None are written otherwise. */
+  details?: DocDetails
 }
 const PLAIN: Recipe = { paper: DEFAULT_PAPER }
 
@@ -99,6 +103,7 @@ function fillForm(doc: PDFDocument, answers: Record<string, FieldValue>) {
 async function assemble(pages: JobPage[], recipe: Recipe) {
   // No producer/creator stamps, and source metadata (author, etc.) is not carried over.
   const out = await PDFDocument.create({ updateMetadata: false })
+  writeDetails(out, recipe.details)
 
   // Copy each source's pages in one call so shared fonts and images are embedded once.
   const wanted = new Map<string, number[]>()
@@ -308,9 +313,10 @@ function compressorFor(pages: JobPage[], recipe: Recipe) {
           pages.length === first.pageCount &&
           pages.every((p, i) => p.sourceId === first.id && p.index === i && normalize(p.rotation) === 0 && !p.marks?.length) &&
           !recipe.flatten &&
+          !recipe.details && // details are written into a rebuilt copy, as every other export does
           !Object.keys(recipe.fields?.[first.id] ?? {}).length
         const base = untouched ? first.bytes : await build(pages, recipe)
-        const c = new Compressor(base, browserCodec, budgetsFor((navigator as { deviceMemory?: number }).deviceMemory))
+        const c = new Compressor(base, browserCodec, budgetsFor((navigator as { deviceMemory?: number }).deviceMemory), recipe.details)
         await c.init()
         return c
       })()
@@ -349,9 +355,9 @@ self.onmessage = async (e: MessageEvent) => {
     name: string
     pages: JobPage[]
     sources: WorkerSource[]
-    options?: { preset?: keyof typeof PRESETS; target?: number; groups?: number[][]; maxBytes?: number; paper?: Paper; stamps?: Stamps; fields?: Recipe['fields']; flatten?: boolean; images?: MarkImage[] }
+    options?: { preset?: keyof typeof PRESETS; target?: number; groups?: number[][]; maxBytes?: number; paper?: Paper; stamps?: Stamps; fields?: Recipe['fields']; flatten?: boolean; images?: MarkImage[]; details?: DocDetails }
   }
-  const recipe: Recipe = { paper: options?.paper ?? DEFAULT_PAPER, fields: options?.fields, flatten: options?.flatten }
+  const recipe: Recipe = { paper: options?.paper ?? DEFAULT_PAPER, fields: options?.fields, flatten: options?.flatten, details: options?.details }
   // Each job brings the signatures its pages use, so the engine holds only those, never ones from earlier jobs.
   markImages.clear()
   for (const img of options?.images ?? []) markImages.set(img.id, img)

@@ -12,6 +12,14 @@ describe('page number wording', () => {
     expect(numberLabel('n-of-total', 3, 12)).toBe('3 / 12')
   })
 
+  it('writes Bates numbers: a prefix and the number padded with zeros, with no total', () => {
+    expect(numberLabel('bates', 42, 900, { prefix: 'ACME', digits: 6 })).toBe('ACME000042')
+    expect(numberLabel('bates', 7, 9, { digits: 4 })).toBe('0007')
+    expect(numberLabel('bates', 3, 9)).toBe('000003') // six digits unless asked otherwise
+    expect(numberLabel('bates', 123456, 9, { prefix: 'X-', digits: 4 })).toBe('X-123456') // never cut a number short
+    expect(labelsFor(3, { position: 'bottom-right', format: 'bates', start: 100, size: 9, skipFirst: true, prefix: 'DOC', digits: 4 })).toEqual([null, 'DOC0100', 'DOC0101'])
+  })
+
   it('numbers every page from the start number', () => {
     expect(labelsFor(3, opts({ format: 'page-n-of-total' }))).toEqual(['Page 1 of 3', 'Page 2 of 3', 'Page 3 of 3'])
     expect(labelsFor(3, opts({ start: 5 }))).toEqual(['5', '6', '7'])

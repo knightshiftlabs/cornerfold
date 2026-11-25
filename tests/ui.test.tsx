@@ -369,7 +369,7 @@ describe('the Tools menu and its panels', () => {
     await openMenu()
     await until(() => document.activeElement === $$('[role="menuitem"]')[0])
     expect(menuButton().getAttribute('aria-expanded')).toBe('true')
-    expect($$('[role="group"]').map((g) => g.getAttribute('aria-label'))).toEqual(['Make smaller', 'Appearance', 'Protect', 'Sign', 'Select', 'Pages', 'Photos', 'Split', 'Save as', 'Stamp']) // these tests run at phone size, so the phone-only group shows
+    expect($$('[role="group"]').map((g) => g.getAttribute('aria-label'))).toEqual(['Make smaller', 'Appearance', 'Protect', 'Details', 'Sign', 'Select', 'Pages', 'Photos', 'Split', 'Save as', 'Stamp']) // these tests run at phone size, so the phone-only group shows
     expect(document.activeElement).toBe($$('[role="menuitem"]')[0]) // focus goes to the first tool
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await until(() => !menu())

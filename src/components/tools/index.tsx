@@ -1,12 +1,13 @@
 // The tool panels. Loaded only when a tool is first opened, so they cost nothing on the first screen.
 import { useMemo, useState } from 'react'
 import { collectText, exportProtected, exportStamped, saveImages } from '../../lib/exporters'
-import { labelsFor, unsupportedCharacters, type NumberFormat, type NumberOptions, type NumberPosition, type WatermarkOptions } from '../../lib/stampText'
+import { BATES_DIGITS, MAX_PREFIX, labelsFor, unsupportedCharacters, type NumberFormat, type NumberOptions, type NumberPosition, type WatermarkOptions } from '../../lib/stampText'
 import { download } from '../../lib/actions'
 import { describePaper, placeImage, type Paper } from '../../lib/paper'
 import { chunks, selectIndices, splitBy } from '../../lib/pageTools'
 import { everyNth, formatRanges, parseGroups, parseRanges } from '../../lib/ranges'
 import { useStore } from '../../lib/store'
+import { EMPTY_DETAILS, MAX_DETAIL, cleanDetails, detailsProblem, type DocDetails } from '../../lib/details'
 import { Button, Sheet } from '../ui'
 import { Choices, Field, TextInput } from './parts'
 import Preview from './Preview'
@@ -24,6 +25,7 @@ export default function Tools() {
   if (tool === 'numbers') return <NumbersPanel />
   if (tool === 'watermark') return <WatermarkPanel />
   if (tool === 'protect') return <ProtectPanel />
+  if (tool === 'details') return <DetailsPanel />
   return null
 }
 
@@ -390,19 +392,28 @@ const POSITIONS: { value: NumberPosition; label: string }[] = [
 function NumbersPanel() {
   const close = useStore((s) => s.closeTool)
   const scope = useScope()
-  const [o, setO] = useState<NumberOptions>({ position: 'bottom-center', format: 'page-n-of-total', start: 1, size: 11, skipFirst: false })
+  const [o, setO] = useState<NumberOptions>({ position: 'bottom-center', format: 'page-n-of-total', start: 1, size: 11, skipFirst: false, prefix: '', digits: 6 })
   const [startText, setStartText] = useState('1')
   const set = (part: Partial<NumberOptions>) => setO((x) => ({ ...x, ...part }))
   const start = Number(startText)
-  const startError = Number.isInteger(start) && start >= 0 && start <= 99999 ? null : 'Type a whole number, such as 1.'
+  const bates = o.format === 'bates'
+  const startError = Number.isInteger(start) && start >= 0 && start <= (bates ? 99_999_999 : 99999) ? null : 'Type a whole number, such as 1.'
+  const badPrefix = unsupportedCharacters(o.prefix ?? '')
+  const prefixError = !bates
+    ? null
+    : badPrefix.length
+      ? `The prefix can use Latin letters, numbers and common symbols. Cornerfold can’t draw ${badPrefix.slice(0, 6).join(' ')} yet.`
+      : (o.prefix ?? '').length > MAX_PREFIX
+        ? `Keep the prefix to ${MAX_PREFIX} characters or fewer.`
+        : null
   const labels = labelsFor(Math.max(1, scope.count), { ...o, start: startError ? 1 : start })
   const example = labels.find((l) => l) ?? '—'
   const top = o.position.startsWith('top')
   const align = o.position.endsWith('left') ? 'justify-start' : o.position.endsWith('right') ? 'justify-end' : 'justify-center'
   const go = () => {
-    if (startError) return
+    if (startError || prefixError) return
     close()
-    void exportStamped({ numbers: { ...o, start } })
+    void exportStamped({ numbers: { ...o, start, prefix: (o.prefix ?? '').trim() } })
   }
   return (
     <Sheet
@@ -412,7 +423,7 @@ function NumbersPanel() {
       footer={
         <>
           <Button onClick={close}>Cancel</Button>
-          <Button variant="primary" disabled={!!startError} onClick={go}>
+          <Button variant="primary" disabled={!!startError || !!prefixError} onClick={go}>
             Export with page numbers
           </Button>
         </>
@@ -441,9 +452,21 @@ function NumbersPanel() {
               { value: 'n-of-total', label: '1 / 9' },
               { value: 'page-n', label: 'Page 1' },
               { value: 'n', label: '1' },
+              { value: 'bates', label: 'Bates: ABC000001' },
             ]}
           />
         </div>
+        {bates && (
+          <div className="flex flex-wrap items-start gap-5">
+            <Field id="numbers-prefix" label="Prefix" error={prefixError} hint="Text before the number, such as a case reference. Can be left empty.">
+              <TextInput id="numbers-prefix" aria-describedby="numbers-prefix-note" value={o.prefix ?? ''} maxLength={MAX_PREFIX + 10} aria-invalid={!!prefixError} placeholder="ABC" onInput={(e) => set({ prefix: e.currentTarget.value })} className="!w-48" />
+            </Field>
+            <div>
+              <div className="mb-1.5 text-sm font-semibold">Digits</div>
+              <Choices<string> label="Digits" value={String(o.digits ?? 6)} onChange={(v) => set({ digits: Number(v) })} options={BATES_DIGITS.map((d) => ({ value: String(d), label: String(d) }))} />
+            </div>
+          </div>
+        )}
         <div className="flex flex-wrap items-start gap-5">
           <Field id="numbers-start" label="First number" error={startError}>
             <TextInput id="numbers-start" inputMode="numeric" value={startText} aria-invalid={!!startError} aria-describedby="numbers-start-note" onInput={(e) => setStartText(e.currentTarget.value)} className="!w-28" />
@@ -532,13 +555,22 @@ function ProtectPanel() {
   const [blockCopying, setBlockCopying] = useState(false)
   const [blockEditing, setBlockEditing] = useState(false)
   const [working, setWorking] = useState(false)
+  const [ownOwner, setOwnOwner] = useState(false)
+  const [owner, setOwner] = useState('')
+  const [ownerAgain, setOwnerAgain] = useState('')
   const mismatch = !shown && again !== '' && again !== password
-  const ready = password !== '' && (shown || password === again) && !working
+  // A permissions password only means something when there is a restriction for it to lift.
+  const restricted = blockPrinting || blockCopying || blockEditing
+  const usingOwner = restricted && ownOwner
+  const ownerMismatch = usingOwner && !shown && ownerAgain !== '' && ownerAgain !== owner
+  const ownerSame = usingOwner && owner !== '' && owner === password
+  const ownerReady = !usingOwner || (owner !== '' && !ownerSame && (shown || owner === ownerAgain))
+  const ready = password !== '' && (shown || password === again) && ownerReady && !working
 
   const go = async () => {
     if (!ready) return
     setWorking(true)
-    const ok = await exportProtected({ password, blockPrinting, blockCopying, blockEditing })
+    const ok = await exportProtected({ password, blockPrinting, blockCopying, blockEditing, ...(usingOwner ? { ownerPassword: owner } : {}) })
     setWorking(false)
     if (ok) close()
   }
@@ -592,7 +624,88 @@ function ProtectPanel() {
           </div>
           <p className="mt-2 text-sm text-muted">These are a request: well-behaved PDF readers follow them, but some programs ignore them. Only the password keeps people out.</p>
         </fieldset>
+        {restricted && (
+          <div className="space-y-3">
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" checked={ownOwner} onChange={(e) => setOwnOwner(e.currentTarget.checked)} className="mt-0.5 size-4 accent-[var(--ink)]" />
+              <span>Let me change these later, with a second password</span>
+            </label>
+            {usingOwner ? (
+              <>
+                <Field
+                  id="protect-owner"
+                  label="Password to change the restrictions"
+                  error={ownerSame ? 'Use a different password from the one that opens the file.' : null}
+                  hint="Anyone with it can open the file and lift every restriction. Keep it to yourself."
+                >
+                  <TextInput id="protect-owner" type={shown ? 'text' : 'password'} autoComplete="new-password" aria-invalid={ownerSame} aria-describedby="protect-owner-note" value={owner} onInput={(e) => setOwner(e.currentTarget.value)} />
+                </Field>
+                {!shown && (
+                  <Field id="protect-owner-again" label="Type the second password again" error={ownerMismatch ? 'The two passwords are different.' : null}>
+                    <TextInput id="protect-owner-again" type="password" autoComplete="new-password" aria-invalid={ownerMismatch} aria-describedby="protect-owner-again-note" value={ownerAgain} onInput={(e) => setOwnerAgain(e.currentTarget.value)} />
+                  </Field>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-muted">Without one, nobody can change the restrictions afterwards, not even you.</p>
+            )}
+          </div>
+        )}
       </form>
+    </Sheet>
+  )
+}
+
+const DETAIL_FIELDS: { key: keyof DocDetails; label: string; hint?: string }[] = [
+  { key: 'title', label: 'Title', hint: 'Many PDF readers show it instead of the file name.' },
+  { key: 'author', label: 'Author' },
+  { key: 'subject', label: 'Subject' },
+  { key: 'keywords', label: 'Keywords', hint: 'Separate them with commas.' },
+]
+
+function DetailsPanel() {
+  const close = useStore((s) => s.closeTool)
+  const saved = useStore((s) => s.details)
+  const setDetails = useStore((s) => s.setDetails)
+  const [d, setD] = useState<DocDetails>(saved ?? EMPTY_DETAILS)
+  const problem = detailsProblem(d)
+  const save = () => {
+    if (problem) return
+    setDetails(cleanDetails(d))
+    close()
+  }
+  return (
+    <Sheet
+      title="Document details"
+      intro="Written into every PDF you export from now on, until you clear them. Without them, Cornerfold writes no details at all, and carries none over from your files."
+      onClose={close}
+      footer={
+        <>
+          {saved && (
+            <Button
+              onClick={() => {
+                setDetails(null)
+                close()
+              }}
+            >
+              Clear details
+            </Button>
+          )}
+          <Button onClick={close}>Cancel</Button>
+          <Button variant="primary" disabled={!!problem} onClick={save}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {DETAIL_FIELDS.map((f, i) => (
+          <Field key={f.key} id={`details-${f.key}`} label={f.label} hint={f.hint} error={d[f.key].length > MAX_DETAIL ? problem : null}>
+            <TextInput id={`details-${f.key}`} data-autofocus={i === 0 ? true : undefined} value={d[f.key]} aria-describedby={`details-${f.key}-note`} onInput={(e) => setD({ ...d, [f.key]: e.currentTarget.value })} onKeyDown={(e) => e.key === 'Enter' && save()} />
+          </Field>
+        ))}
+        <p className="text-sm text-muted">Kept only in this tab: closing it forgets them. Saving as images or text leaves them out, as those are not PDFs.</p>
+      </div>
     </Sheet>
   )
 }

@@ -4,6 +4,8 @@
 // and in Node tests alike.
 import { PDFArray, PDFDict, PDFDocument, PDFName, PDFNumber, PDFRawStream, PDFRef, type PDFObject } from '@cantoo/pdf-lib'
 import { unzlibSync } from 'fflate'
+import type { DocDetails } from './details'
+import { writeDetails } from './detailsWrite'
 
 export interface Codec<B extends { width: number; height: number }> {
   decodeJpeg(bytes: Uint8Array): Promise<B>
@@ -88,6 +90,8 @@ export class Compressor<B extends { width: number; height: number }> {
     readonly source: Uint8Array,
     private codec: Codec<B>,
     private budgets: Budgets = DEFAULT_BUDGETS,
+    /** Details the person chose to add; everything else is stripped, as always. */
+    private details?: DocDetails | null,
   ) {}
 
   get imageCount() {
@@ -131,6 +135,7 @@ export class Compressor<B extends { width: number; height: number }> {
       replaceImage(doc, c, jpeg, Math.max(1, Math.round(c.width * scale)), Math.max(1, Math.round(c.height * scale)))
     }
     stripMetadata(doc)
+    writeDetails(doc, this.details)
     const out = await doc.save({ useObjectStreams: true })
     return out.length < this.source.length ? out : this.source
   }

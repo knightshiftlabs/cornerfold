@@ -43,6 +43,14 @@ describe('compressing a scanned document', () => {
     expect(doc.getAuthor()).toBeUndefined()
   })
 
+  it('writes the document details someone chose, and still removes everything else', async () => {
+    const withDetails = new Compressor(source, nodeCodec, undefined, { title: 'Chosen title', author: 'Chosen author', subject: '', keywords: 'a, b' })
+    await withDetails.init()
+    const doc = await PDFDocument.load(await withDetails.run(PRESETS.balanced), { updateMetadata: false })
+    expect([doc.getTitle(), doc.getAuthor(), doc.getSubject(), doc.getKeywords(), doc.getProducer()]).toEqual(['Chosen title', 'Chosen author', undefined, 'a b', undefined])
+    withDetails.dispose()
+  })
+
   it('hits a reachable size target, and admits when one is impossible', async () => {
     const reachable = await c.fitUnder(300 * 1024)
     expect(reachable.met).toBe(true)

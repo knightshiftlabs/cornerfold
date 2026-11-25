@@ -2,7 +2,7 @@
 // it without downloading one: the drawing itself happens in the export engine (stamp.ts).
 
 export type NumberPosition = 'bottom-center' | 'bottom-right' | 'bottom-left' | 'top-center' | 'top-right' | 'top-left'
-export type NumberFormat = 'n' | 'page-n' | 'page-n-of-total' | 'n-of-total'
+export type NumberFormat = 'n' | 'page-n' | 'page-n-of-total' | 'n-of-total' | 'bates'
 export interface NumberOptions {
   position: NumberPosition
   format: NumberFormat
@@ -12,7 +12,16 @@ export interface NumberOptions {
   size: number
   /** Leave the first page, such as a cover, without a number. */
   skipFirst: boolean
+  /** Bates numbers only: text before the number, such as a case reference. */
+  prefix?: string
+  /** Bates numbers only: the number is padded with zeros to this many digits. */
+  digits?: number
 }
+
+/** The longest prefix a Bates number can have, so the label still fits on a page. */
+export const MAX_PREFIX = 24
+/** The digit counts offered for Bates numbers. */
+export const BATES_DIGITS = [4, 6, 8] as const
 export interface WatermarkOptions {
   text: string
   /** Degrees, counter-clockwise as seen. */
@@ -24,7 +33,9 @@ export interface Stamps {
   watermark?: WatermarkOptions
 }
 
-export function numberLabel(format: NumberFormat, n: number, total: number) {
+export function numberLabel(format: NumberFormat, n: number, total: number, bates: { prefix?: string; digits?: number } = {}) {
+  // Bates numbering, as used for legal and evidence files: a prefix and a zero-padded number, such as ACME000042.
+  if (format === 'bates') return `${bates.prefix ?? ''}${String(n).padStart(bates.digits ?? 6, '0')}`
   if (format === 'page-n') return `Page ${n}`
   if (format === 'page-n-of-total') return `Page ${n} of ${total}`
   if (format === 'n-of-total') return `${n} / ${total}`
@@ -37,7 +48,7 @@ export function labelsFor(count: number, o: NumberOptions): (string | null)[] {
   const last = o.start + numbered - 1
   return Array.from({ length: count }, (_, i) => {
     if (o.skipFirst && i === 0) return null
-    return numberLabel(o.format, o.start + i - (o.skipFirst ? 1 : 0), last)
+    return numberLabel(o.format, o.start + i - (o.skipFirst ? 1 : 0), last, o)
   })
 }
 

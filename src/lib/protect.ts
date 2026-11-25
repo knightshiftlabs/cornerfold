@@ -9,6 +9,11 @@ export interface ProtectOptions {
   blockPrinting?: boolean
   blockCopying?: boolean
   blockEditing?: boolean
+  /**
+   * The password that allows changing or removing the restrictions. Left out, Cornerfold makes up a random one and
+   * forgets it, so nobody can change them. It must differ from the password that opens the file.
+   */
+  ownerPassword?: string
 }
 
 /** The part of qpdf's WebAssembly module that is used. */
@@ -23,12 +28,16 @@ export function randomOwnerPassword() {
   return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+/** The owner password to use: the person's own, if they chose one, or a random one nobody knows. */
+export const ownerFor = (opts: ProtectOptions) => opts.ownerPassword || randomOwnerPassword()
+
 /**
  * qpdf's arguments for AES-256 encryption. Passwords go in as `--name=value`, which takes anything as it is: a password
  * that starts with a dash, or looks like a file name, would be mistaken for an option in the plain positional form.
  */
 export function protectArgs(opts: ProtectOptions, owner: string, input: string, output: string) {
   if (!opts.password) throw new Error('Choose a password first.')
+  if (owner === opts.password) throw new Error('The password for changing the restrictions must be different from the one that opens the file.')
   return [
     '--encrypt',
     `--user-password=${opts.password}`,
@@ -44,7 +53,7 @@ export function protectArgs(opts: ProtectOptions, owner: string, input: string, 
 }
 
 /** Encrypts the PDF `bytes` with a qpdf module that was made with `noInitialRun`. */
-export function encryptWith(qpdf: Qpdf, bytes: Uint8Array, opts: ProtectOptions, owner = randomOwnerPassword()): Uint8Array {
+export function encryptWith(qpdf: Qpdf, bytes: Uint8Array, opts: ProtectOptions, owner = ownerFor(opts)): Uint8Array {
   qpdf.FS.writeFile('/input.pdf', bytes)
   try {
     // 0 is success; 3 means it worked with warnings, which for a PDF that Cornerfold itself just wrote is not a problem.
@@ -77,6 +86,6 @@ export function protectPdf(bytes: Uint8Array, opts: ProtectOptions): Promise<Uin
       done()
       reject(new Error('The locking engine could not start. Reload the page and try again.'))
     }
-    worker.postMessage({ bytes: copy, options: opts, owner: randomOwnerPassword() }, [copy.buffer])
+    worker.postMessage({ bytes: copy, options: opts, owner: ownerFor(opts) }, [copy.buffer])
   })
 }

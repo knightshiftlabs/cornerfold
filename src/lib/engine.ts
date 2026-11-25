@@ -46,7 +46,7 @@ function recipeFor(pages: Page[]) {
   const fields = Object.fromEntries(Object.entries(st.fieldValues).filter(([sid]) => files.has(sid)))
   const used = new Set(pages.flatMap((p) => p.marks ?? []).flatMap((m) => (m.kind === 'image' ? [m.imageId] : [])))
   const images = [...used].flatMap((id) => (st.markImages[id] ? [{ ...st.markImages[id], png: st.markImages[id].png.slice() }] : []))
-  return { paper: st.paper, ...(Object.keys(fields).length ? { fields } : {}), ...(st.lockAnswers ? { flatten: true } : {}), ...(images.length ? { images } : {}) }
+  return { paper: st.paper, ...(Object.keys(fields).length ? { fields } : {}), ...(st.lockAnswers ? { flatten: true } : {}), ...(images.length ? { images } : {}), ...(st.details ? { details: st.details } : {}) }
 }
 
 export async function runJob(op: 'merge' | 'split' | 'compress' | 'blank' | 'stamp', pages: Page[], name: string, options?: JobOptions): Promise<JobResult> {

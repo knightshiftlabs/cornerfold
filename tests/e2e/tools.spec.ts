@@ -1,7 +1,7 @@
 // The Tools menu, end to end: each tool driven through its real panel, with every file it makes checked.
 import { createCanvas, loadImage } from '@napi-rs/canvas'
 import { test, expect } from './fixtures'
-import { imageSize, load, pageSizes, seenText, unzip } from './pdf'
+import { imageSize, info, load, pageSizes, seenText, unzip } from './pdf'
 
 test.beforeEach(async ({ app }) => {
   await app.open()
@@ -151,6 +151,35 @@ test('Page numbers sit at the bottom centre of each page as seen, upright on a t
     expect(label.angle).toBe(0)
   })
   await expect(app.cards()).toHaveCount(4) // the pages here are unchanged
+})
+
+test('Bates numbers: a prefix and a zero-padded number on every page, and a prefix it cannot draw is refused', async ({ page, app }) => {
+  await app.tool(/Page numbers/)
+  await app.dialog().getByRole('radio', { name: 'Bates: ABC000001' }).click()
+  await page.locator('#numbers-prefix').fill('दस्तावेज़')
+  await expect(app.dialog().getByRole('alert')).toContainText('can’t draw')
+  await expect(app.dialog().getByRole('button', { name: 'Export with page numbers' })).toBeDisabled()
+  await page.locator('#numbers-prefix').fill('ACME-')
+  await app.dialog().getByRole('radio', { name: '4' }).click()
+  await page.locator('#numbers-start').fill('41')
+  await expect(app.dialog()).toContainText('“ACME-0041”')
+  const out = await app.download(() => app.dialog().getByRole('button', { name: 'Export with page numbers' }).click())
+  const seen = (await seenText(out.bytes)).map((p) => p.items.map((it) => it.str).find((s) => s.startsWith('ACME-')))
+  expect(seen).toEqual(['ACME-0041', 'ACME-0042', 'ACME-0043', 'ACME-0044'])
+})
+
+test('Document details go into every export once saved, and out again once cleared', async ({ page, app }) => {
+  await app.tool(/Document details/)
+  await page.locator('#details-title').fill('Quarterly report')
+  await page.locator('#details-author').fill('KnightShift Labs')
+  await page.locator('#details-keywords').fill('report, q3')
+  await app.dialog().getByRole('button', { name: 'Save' }).click()
+  await expect(app.dialog()).toHaveCount(0)
+  expect(await info((await app.exportPdf()).bytes)).toMatchObject({ title: 'Quarterly report', author: 'KnightShift Labs', producer: undefined, creator: undefined, xmp: false })
+  await app.tool(/Document details/)
+  await expect(page.locator('#details-title')).toHaveValue('Quarterly report')
+  await app.dialog().getByRole('button', { name: 'Clear details' }).click()
+  expect(await info((await app.exportPdf()).bytes)).toEqual({ title: undefined, producer: undefined, author: undefined, creator: undefined, xmp: false })
 })
 
 test('Watermark explains text it can’t draw yet, and stamps every page', async ({ page, app }) => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRequire } from 'node:module'
 import { PDFDocument, PDFName } from '@cantoo/pdf-lib'
-import { encryptWith, protectArgs, randomOwnerPassword, type Qpdf } from '../src/lib/protect'
+import { encryptWith, ownerFor, protectArgs, randomOwnerPassword, type Qpdf } from '../src/lib/protect'
 
 // The real qpdf, as it ships, run under Node.
 const create = createRequire(import.meta.url)('@neslinesli93/qpdf-wasm') as (o: object) => Promise<Qpdf>
@@ -64,6 +64,31 @@ describe('locking a file with a password', () => {
     expect(() => protectArgs({ password: '' }, 'o', '/a', '/b')).toThrow('Choose a password')
     expect(randomOwnerPassword()).toHaveLength(48)
     expect(randomOwnerPassword()).not.toBe(randomOwnerPassword())
+  })
+
+  it('with a permissions password of your own, that password opens the file with every right, and the open one keeps the restrictions', async () => {
+    const asker = await qpdf()
+    const rights = (bytes: Uint8Array, password: string) => {
+      asker.FS.writeFile('/c.pdf', bytes)
+      asker.callMain(['--json', `--password=${password}`, '/c.pdf', '/c.json'])
+      const { encrypt } = JSON.parse(new TextDecoder().decode(asker.FS.readFile('/c.json')))
+      return { owner: encrypt.ownerpasswordmatched as boolean, user: encrypt.userpasswordmatched as boolean }
+    }
+    const out = encryptWith(await qpdf(), await sample(), { password: 'open me', ownerPassword: 'change me', blockPrinting: true })
+    expect(await open(out, 'open me')).toBe('secret words')
+    expect(rights(out, 'change me')).toMatchObject({ owner: true })
+    expect(rights(out, 'open me')).toMatchObject({ owner: false, user: true })
+    // And it can be unlocked for good with it, which is the point of having one.
+    asker.FS.writeFile('/l.pdf', out)
+    expect(asker.callMain(['--password=change me', '--decrypt', '/l.pdf', '/u.pdf'])).toBe(0)
+    expect(await open(asker.FS.readFile('/u.pdf'))).toBe('secret words')
+  })
+
+  it('refuses a permissions password that is the same as the one that opens the file, and otherwise makes one up', () => {
+    expect(() => protectArgs({ password: 'same', ownerPassword: 'same' }, 'same', '/a', '/b')).toThrow('must be different')
+    expect(ownerFor({ password: 'p', ownerPassword: 'mine' })).toBe('mine')
+    expect(ownerFor({ password: 'p' })).toHaveLength(48)
+    expect(ownerFor({ password: 'p', ownerPassword: '' })).toHaveLength(48)
   })
 
   it('says so when qpdf cannot read the file, and leaves nothing behind', async () => {

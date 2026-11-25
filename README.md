@@ -43,7 +43,7 @@ Fill and sign (`src/components/tools/FillSign.tsx`) adds marks to pages (`src/li
 
 `src/lib/pdf.ts` renders thumbnails with pdf.js only when a card scrolls near view, three at a time, cached per session. pdf.js is lazy-loaded and prefetched on idle, so first paint is about 72 KB of gzipped JS.
 
-`src/lib/worker.ts` builds output PDFs with `@cantoo/pdf-lib` (a maintained fork of pdf-lib) in a Web Worker, so the UI never freezes on big files. Each source's pages are copied in a single call so shared fonts and images are embedded once. Source bytes cross into the worker once per file. Outputs contain no author, creator or producer metadata.
+`src/lib/worker.ts` builds output PDFs with `@cantoo/pdf-lib` (a maintained fork of pdf-lib) in a Web Worker, so the UI never freezes on big files. Each source's pages are copied in a single call so shared fonts and images are embedded once. Source bytes cross into the worker once per file. Outputs contain no author, creator or producer metadata, and carry none over from the files that went in. The one exception is details the person chooses to add with Document details: a title, author, subject and keywords (`src/lib/details.ts`; written by `src/lib/detailsWrite.ts`, and only the ones filled in).
 
 ## Privacy guarantees, and what enforces each one
 
@@ -59,7 +59,7 @@ detection, size parsing, editing and undo, and the interface in a simulated brow
 
 `npm run check:live` (after `npm run build`) checks the live site against this source: every file served byte for byte as built, nothing loaded from another site, and the headers in `public/_headers`. GitHub runs it daily and after every push (`.github/workflows/live-check.yml`). Builds are reproducible, which is what makes that comparison possible; keep them that way.
 
-`npm run test:e2e` runs the site in a real Chrome, on a desktop and as a touch phone, under its real security headers. Every one of those tests fails if a request leaves the site.
+`npm run test:e2e` runs the site in a real Chrome, on a desktop and as a touch phone, under its real security headers. Every one of those tests fails if a request leaves the site. On GitHub the same tests also run in Firefox and in WebKit (Safari's engine), as a report that does not block a release; run them yourself with `CROSS_BROWSER=1`. Two things the test tools cannot do there are checked by hand: pasting a real image in Firefox, and following Firefox's dark mode.
 
 **On GitHub:** every push runs the tests and the build on a clean Linux machine (`.github/workflows/ci.yml`). A red cross next to a commit means something broke. Cloudflare also runs the tests before every build (`npm test && npm run build`), so a commit with failing tests is not deployed. Security reports: see `SECURITY.md`.
 
@@ -93,7 +93,7 @@ Any change to the privacy policy or terms gets its own changelog line. The "Last
 
 ## Roadmap
 
-See `CHANGELOG.md` for everything that has shipped (merge, split, reorder, rotate, images to PDF, compression with size targets, installable offline app, opening and adding passwords, find and redact, page tools, page numbers and watermarks, saving as images or text).
+See `CHANGELOG.md` for everything that has shipped (merge, split, reorder, rotate, images to PDF, compression with size targets, installable offline app, opening and adding passwords, find and redact, page tools, page numbers (including Bates numbers) and watermarks, document details, saving as images or text).
 
 Next: running the real-browser tests automatically, then fill and sign.
 
@@ -103,4 +103,4 @@ Not planned: anything that needs a server to process files, such as converting W
 
 ## Known limits
 
-Requires a modern browser (Chrome/Edge 119+, Safari 17.4+, Firefox 121+). Protected PDFs open with their password into an unprotected copy; Protect with password uses AES-256 and its restrictions (no printing, copying or editing) are requests that some programs ignore, so the password is the real lock, and a lost password cannot be recovered; those protected in a way that needs a certificate can't be opened. Compression leaves CMYK (print) and some rarer image types untouched. iPhone HEIC photos only open in browsers that can decode them, mainly Safari. Images become pages at 96 dpi, at their own size unless a page size for photos is chosen; the page cards show the photos themselves, not the paper. Watermarks, and text, answers and typed signatures in Fill and sign, use Latin letters, numbers and common symbols only. Signatures are pictures of a signature, not certificate-based digital signatures. Form fields worked out by the form's own scripts, and signature fields meant for digital signatures, are not supported. Extracting text works only on text that is really in the PDF, not on scans. Finding blank pages, the large preview and saving as images draw each page in the browser, so they take a while on very long documents.
+Requires a modern browser (Chrome/Edge 119+, Safari 17.4+, Firefox 121+). Protected PDFs open with their password into an unprotected copy; Protect with password uses AES-256 and its restrictions (no printing, copying or editing) are requests that some programs ignore, so the password is the real lock, and a lost password cannot be recovered. Unless a second, permissions password is set, nobody can change those restrictions afterwards, not even the person who set them; those protected in a way that needs a certificate can't be opened. Compression leaves CMYK (print) and some rarer image types untouched. iPhone HEIC photos only open in browsers that can decode them, mainly Safari. Images become pages at 96 dpi, at their own size unless a page size for photos is chosen; the page cards show the photos themselves, not the paper. Watermarks, Bates number prefixes, and text, answers and typed signatures in Fill and sign, use Latin letters, numbers and common symbols only. Signatures are pictures of a signature, not certificate-based digital signatures. Form fields worked out by the form's own scripts, and signature fields meant for digital signatures, are not supported. Extracting text works only on text that is really in the PDF, not on scans. Finding blank pages, the large preview and saving as images draw each page in the browser, so they take a while on very long documents.

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from 'react'
 import { createPortal } from 'react-dom'
 import { splitPages } from '../lib/actions'
-import { ArrowDownUp, Palette, CopyPlus, Droplets, FilePlus2, FileText, FlipVertical2, Hash, Images, ListChecks, Lock, Ruler, ScanSearch, Scissors, Shrink, Signature, SquareSplitHorizontal, Wrench } from 'lucide-react'
+import { ArrowDownUp, Palette, CopyPlus, Droplets, FilePlus2, FileText, FlipVertical2, Hash, Images, ListChecks, Lock, Ruler, ScanSearch, Scissors, Shrink, Signature, SquareSplitHorizontal, Tag, Wrench } from 'lucide-react'
 import { describePaper } from '../lib/paper'
 import { duplicateSelected, insertBlankPage, reverseOrder, selectBlankPages } from '../lib/pageTools'
 import { useStore } from '../lib/store'
@@ -27,6 +27,7 @@ export function ToolsMenu() {
   const invert = useStore((s) => s.invertSelection)
   const paper = useStore((s) => s.paper)
   const pagesCount = useStore((s) => s.pages.length)
+  const details = useStore((s) => s.details)
   const root = useRef<HTMLDivElement>(null)
   const panel = useRef<HTMLDivElement>(null)
   // Where the button is, so the desktop dropdown can sit under it.
@@ -46,6 +47,10 @@ export function ToolsMenu() {
     {
       name: 'Protect',
       items: [{ icon: Lock, label: 'Protect with password…', hint: 'Lock the exported file', run: () => openTool('protect') }],
+    },
+    {
+      name: 'Details',
+      items: [{ icon: Tag, label: 'Document details…', hint: details ? 'On: added to every export' : 'Title, author, subject, keywords', run: () => openTool('details') }],
     },
     {
       name: 'Sign',
