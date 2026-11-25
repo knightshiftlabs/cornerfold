@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.13.0] - TBD
+## [1.13.0] - 2026-11-26
 
 Adds trimming and resizing pages, and saving the pictures stored in a PDF.
 
