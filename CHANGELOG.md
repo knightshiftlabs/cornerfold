@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.9.0] - TBD
+## [1.9.0] - 2026-11-26
 
 ### Added
 - Find and redact. In the Fill and sign editor, a new "Find and redact" button searches every page for a word or phrase and lists each match with the words around it. Tick the ones you want covered and Cornerfold adds a redaction box over each. It can match capitals exactly and whole words only, copes with a phrase that runs over a line break, and skips a match that already has a box on it. Adding the boxes is one step you can undo. Nothing is applied until you export, as with boxes you draw yourself.
