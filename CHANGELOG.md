@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.12.0] - TBD
+## [1.12.0] - 2026-11-26
 
 Adds Bates numbering, document details, and an optional password for changing a locked file's restrictions.
 
