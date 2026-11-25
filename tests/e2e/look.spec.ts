@@ -72,6 +72,10 @@ test.describe('choices', () => {
     await page.getByRole('radiogroup', { name: 'Corners' }).getByRole('radio', { name: 'Soft' }).focus()
     await page.keyboard.press('ArrowRight')
     await expect(html(page)).not.toHaveAttribute('data-corners', 'soft')
+    // The app moves focus to the newly chosen button a moment after the choice (on the next animation frame). A person
+    // waits for that without thinking; this test moved on at once, and on a slow machine the late focus move landed
+    // after the next focus() below and took the arrow key away from the swatches. So wait for it.
+    await expect(page.getByRole('radiogroup', { name: 'Corners' }).getByRole('radio', { checked: true })).toBeFocused()
     await page.getByRole('radio', { name: 'Indigo' }).focus()
     await page.keyboard.press('ArrowRight')
     await expect(html(page)).toHaveAttribute('data-accent', 'blue')

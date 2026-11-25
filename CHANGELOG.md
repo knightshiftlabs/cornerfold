@@ -8,6 +8,11 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.10.1] - TBD
+
+### Fixed
+- A browser test of the arrow keys in the Appearance panel failed now and then on GitHub (it did on the 1.9.0 release). The app moves focus to the button you just chose one animation frame after the choice, and the test pressed its next key without waiting for that, so on a slow machine the late focus move took the key away. The test now waits for the focus to arrive, as a person would. The app itself did not change.
+
 ## [1.10.0] - 2026-11-26
 
 ### Added
