@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ArrowDownToLine, Check, LoaderCircle, X } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { runJob, type JobOptions } from '../lib/engine'
@@ -51,12 +51,18 @@ function Panel() {
       for (const id of ['balanced', 'light', 'smallest'] as const) await run(id, { preset: id })
     })()
     panel.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
-    window.addEventListener('keydown', onKey)
     return () => {
       alive.current = false
-      window.removeEventListener('keydown', onKey)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Escape works from the moment the window is drawn. (In an ordinary effect it was attached a frame later, so a
+  // quick Escape could be missed: a test caught it on a busy machine.)
+  useLayoutEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

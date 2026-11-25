@@ -16,6 +16,9 @@ Adds trimming and resizing pages, and saving the pictures stored in a PDF.
 - Trim or resize, in the Tools menu under Pages. Trim cuts a margin you choose, in millimetres, off each side of the page as you see it, so a turned page is trimmed the way it looks. Resize fits each page onto A4, Letter, A3, A5 or Legal: the content is scaled to fit, keeps its shape and sits in the middle, and landscape pages get landscape paper. Both export a new file; the pages in Cornerfold stay as they are.
 - Pictures in the pages, in the Tools menu under Save as. It saves the photos and images stored inside the pages, each as its own file at the size it is stored: one picture as it is, several in a ZIP. A page you added from a photo gives that photo back. A picture used on several pages, or a page included twice, comes out once, and tiny ones such as dots and lines are left out. It works for every kind of picture a PDF can hold, because pdf.js, which already draws the pages, decodes them.
 
+### Fixed
+- The Compress window now listens for Escape from the moment it opens. Before, it started listening a frame later, so an Escape in that instant was missed. Nobody is likely to press it that fast, but a test did on a busy computer and blocked this release; a new test presses Escape the instant the window appears.
+
 ### Things to know
 - Trimming hides the edges; it does not delete them. What is cut off is still in the file, and anyone can bring it back with the right program. To remove something for good, use Redact in Fill and sign.
 - Pages with a redaction box are skipped when saving pictures, so nothing under a box can come out that way. The notice says how many were skipped.
