@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.14.0] - TBD
+## [1.14.0] - 2026-11-26
 
 Adds a Support page, and says plainly in the terms that Cornerfold is free.
 
