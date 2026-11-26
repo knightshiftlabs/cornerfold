@@ -87,6 +87,7 @@ const html = `<!doctype html>
     <a href="/privacy.html">Privacy</a>
     <a href="/verify.html">Check our claims</a>
     <a href="/terms.html">Terms</a>
+    <a href="/support.html">Support</a>
     <a href="/licenses.txt">Open-source licenses</a>
     <a href="https://github.com/knightshiftlabs/cornerfold">Source code</a>
   </footer>

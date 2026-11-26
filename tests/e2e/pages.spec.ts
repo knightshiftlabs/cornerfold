@@ -104,3 +104,29 @@ test.describe('contrast on the site pages', () => {
     })
   }
 })
+
+test.describe('the Support page', () => {
+  test('says Cornerfold is free, links to both support pages as plain links, and is reached from every footer', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('footer').getByRole('link', { name: 'Support', exact: true }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Support Cornerfold' })).toBeVisible()
+    await expect(page.getByText('Every feature works without payment, a trial, an account, usage limits or watermarks.')).toBeVisible()
+    for (const [name, href] of [['Ko-fi', 'https://ko-fi.com/knightshiftlabs'], ['Buy Me a Coffee', 'https://buymeacoffee.com/knightshiftlabs']] as const) {
+      const link = page.getByRole('main').getByRole('link', { name, exact: true })
+      await expect(link).toHaveAttribute('href', href)
+      await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    }
+    for (const path of ['/about.html', '/privacy.html', '/terms.html', '/verify.html', '/changes.html']) {
+      await page.goto(path)
+      await expect(page.locator('main footer').getByRole('link', { name: 'Support', exact: true }), path).toHaveAttribute('href', '/support.html')
+    }
+  })
+
+  test('fits a phone, and passes the accessibility checks', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 })
+    await page.goto('/support.html')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
+    const { violations } = await new AxeBuilder({ page }).analyze()
+    expect(violations.map((v) => v.id)).toEqual([])
+  })
+})

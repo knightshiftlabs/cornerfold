@@ -8,6 +8,17 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.14.0] - TBD
+
+Adds a Support page, and says plainly in the terms that Cornerfold is free.
+
+### Added
+- A Support page, linked from the foot of the app and of every page. It says that Cornerfold is free to use, with every feature working without payment, a trial, an account, usage limits or watermarks, and that supporting it is optional. Voluntary payments can be made through Ko-fi (international, from $1) or Buy Me a Coffee (for supporters in India). A payment is a gift: it buys no features, priority or support, and Cornerfold works the same whether you pay or not.
+- A Price section in the terms: Cornerfold at cornerfold.org is currently free of charge, support payments are gifts that create no contract, and the source code is published under the AGPL.
+
+### Changed
+- The privacy policy now covers the support links. They are ordinary links: Cornerfold loads nothing from Ko-fi or Buy Me a Coffee and sends them nothing. If you follow one, that site's own privacy policy applies.
+
 ## [1.13.1] - 2026-11-26
 
 Clears the security warning on the build tools, keeps half-finished releases off What's new, and makes two more windows answer Escape at once.

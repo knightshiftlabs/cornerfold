@@ -47,6 +47,6 @@ section { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 8px;
 section h2 { font-size: 1.4rem; margin: 1em 0 0; }
 .muted, .date { color: var(--muted); }
 .date { margin-top: 2px; }
-ul { padding-left: 1.2em; margin: 0; } li { margin: 0.3em 0; }
+ul, ol { padding-left: 1.2em; margin: 0; } li { margin: 0.3em 0; }
 footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 0.9rem; }
 @media (prefers-reduced-motion: no-preference) { .open, .bar nav a { transition: background-color calc(120ms * var(--m, 1)), color calc(120ms * var(--m, 1)); } }

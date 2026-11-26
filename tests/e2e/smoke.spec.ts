@@ -13,7 +13,7 @@ test('the app opens under the real security headers', async ({ page, app }) => {
   await expect(page).toHaveTitle(/Cornerfold/)
 })
 
-for (const path of ['/privacy', '/terms', '/about', '/changes', '/verify', '/licenses.txt', '/.well-known/security.txt']) {
+for (const path of ['/privacy', '/terms', '/about', '/changes', '/verify', '/support', '/licenses.txt', '/.well-known/security.txt']) {
   test(`${path} loads`, async ({ page }) => {
     const response = await page.goto(path)
     expect(response!.status()).toBe(200)
