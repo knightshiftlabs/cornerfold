@@ -8,7 +8,7 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
-## [1.13.1] - TBD
+## [1.13.1] - 2026-11-26
 
 Clears the security warning on the build tools, keeps half-finished releases off What's new, and makes two more windows answer Escape at once.
 
