@@ -54,6 +54,9 @@
   },
   "overrides": {
     "playwright": "1.64.1",
-    "playwright-core": "1.64.1"
+    "playwright-core": "1.64.1",
+    "workbox-build": {
+      "glob": "14.0.6"
+    }
   }
 }

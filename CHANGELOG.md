@@ -8,6 +8,15 @@ This file is the source for the public page at /changes.html, which is generated
 
 ## [Unreleased]
 
+## [1.13.1] - TBD
+
+Clears the security warning on the build tools, keeps half-finished releases off What's new, and makes two more windows answer Escape at once.
+
+### Fixed
+- The security warning GitHub showed for the project (three moderate findings in `npm audit`) is cleared. All three were in the build tools that make the offline copy of the site (`glob` and `minimatch`, used by `workbox-build`), which never reach your browser, and the risky case needs patterns typed by an attacker, which the build never takes. The tool that brings them in (`workbox-build` 7.4.1, the newest) asks for an older `glob`, so Cornerfold now tells npm to use the fixed `glob` 14.0.6 there. The built site, and the list of files kept for offline use, are exactly the same as before.
+- What's new now lists only released versions. When the 1.13.0 release stopped half-way, the site already showed its notes with no date while saying you were on 1.12.0. A version still waiting for its release date is now left off the page.
+- The privacy badge's popover and the Fill and sign editor now listen for Escape from the moment they are drawn, as the Compress window does since 1.13.0. Before, they started listening a frame later. In Fill and sign this also means Escape always acts on the mark that is selected at that moment.
+
 ## [1.13.0] - 2026-11-26
 
 Adds trimming and resizing pages, and saving the pictures stored in a PDF.

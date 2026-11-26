@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ShieldCheck, WifiOff } from 'lucide-react'
 import { reportHref } from '../lib/report'
 
@@ -22,7 +22,8 @@ export function PrivacyBadge() {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
+  // A layout effect, so Escape and a click outside work from the moment the popover is drawn.
+  useLayoutEffect(() => {
     if (!open) return
     const onDown = (e: PointerEvent) => !root.current?.contains(e.target as Node) && setOpen(false)
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)

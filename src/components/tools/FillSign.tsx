@@ -216,8 +216,9 @@ export default function FillSign() {
     } else update(m.id, { size: Math.max(6, Math.min(120, Math.round(m.size * (dir > 0 ? 1.15 : 1 / 1.15)))) })
   }
 
-  // The editor's own keys: Escape lets go of a mark, then closes; arrows outside a mark change page.
-  useEffect(() => {
+  // The editor's own keys: Escape lets go of a mark, then closes; arrows outside a mark change page. A layout effect, so
+  // the handler is in place the moment the editor is drawn, and always knows the current mark rather than the last one.
+  useLayoutEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (making || finding) return
       if (e.key === 'Escape') {

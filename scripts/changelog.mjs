@@ -11,44 +11,52 @@ const inline = (s) =>
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g, '<a href="$2" rel="noreferrer">$1</a>')
 
-const out = []
-let inRelease = false
-let skipping = false
-let listOpen = false
-const closeList = () => listOpen && (out.push('</ul>'), (listOpen = false))
+/**
+ * The releases in the changelog as HTML, newest first. Only released versions are shown: "Unreleased" and any version
+ * still marked "TBD" (not yet dated by `npm version`) are left out, so a release that stopped half-way never appears on
+ * the public page without a date.
+ */
+export function releasesHtml(md) {
+  const out = []
+  let inRelease = false
+  let skipping = false
+  let listOpen = false
+  const closeList = () => listOpen && (out.push('</ul>'), (listOpen = false))
 
-for (const raw of md.split(/\r?\n/)) {
-  const line = raw.trimEnd()
-  const release = line.match(/^## \[([^\]]+)\](?:\s*-\s*(\d{4}-\d{2}-\d{2}))?/)
-  if (release) {
-    closeList()
-    if (inRelease) out.push('</section>')
-    skipping = release[1].toLowerCase() === 'unreleased'
-    inRelease = !skipping
-    if (inRelease) {
-      const date = release[2]
-        ? new Date(release[2] + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
-        : ''
-      out.push(`<section id="v${esc(release[1])}"><h2>Version ${esc(release[1])}</h2>${date ? `<p class="date">${date}</p>` : ''}`)
+  for (const raw of md.split(/\r?\n/)) {
+    const line = raw.trimEnd()
+    const release = line.match(/^## \[([^\]]+)\](?:\s*-\s*(\d{4}-\d{2}-\d{2}))?/)
+    if (release) {
+      closeList()
+      if (inRelease) out.push('</section>')
+      skipping = release[1].toLowerCase() === 'unreleased' || !release[2]
+      inRelease = !skipping
+      if (inRelease) {
+        const date = release[2]
+          ? new Date(release[2] + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+          : ''
+        out.push(`<section id="v${esc(release[1])}"><h2>Version ${esc(release[1])}</h2>${date ? `<p class="date">${date}</p>` : ''}`)
+      }
+      continue
     }
-    continue
+    if (!inRelease || skipping) continue
+    if (/^\[[^\]]+\]:/.test(line)) continue // link reference definitions
+    const heading = line.match(/^### (.+)/)
+    if (heading) {
+      closeList()
+      out.push(`<h3>${inline(heading[1])}</h3>`)
+    } else if (/^\s*[-*] /.test(line)) {
+      if (!listOpen) out.push('<ul>'), (listOpen = true)
+      out.push(`<li>${inline(line.replace(/^\s*[-*] /, ''))}</li>`)
+    } else if (line.trim()) {
+      closeList()
+      out.push(`<p>${inline(line)}</p>`)
+    }
   }
-  if (!inRelease || skipping) continue
-  if (/^\[[^\]]+\]:/.test(line)) continue // link reference definitions
-  const heading = line.match(/^### (.+)/)
-  if (heading) {
-    closeList()
-    out.push(`<h3>${inline(heading[1])}</h3>`)
-  } else if (/^\s*[-*] /.test(line)) {
-    if (!listOpen) out.push('<ul>'), (listOpen = true)
-    out.push(`<li>${inline(line.replace(/^\s*[-*] /, ''))}</li>`)
-  } else if (line.trim()) {
-    closeList()
-    out.push(`<p>${inline(line)}</p>`)
-  }
+  closeList()
+  if (inRelease) out.push('</section>')
+  return out.join('\n  ')
 }
-closeList()
-if (inRelease) out.push('</section>')
 
 const html = `<!doctype html>
 <!-- Generated from CHANGELOG.md by scripts/changelog.mjs. Edit the changelog, not this file. -->
@@ -71,7 +79,7 @@ const html = `<!doctype html>
 <main>
   <h1>What’s new</h1>
   <p class="muted">You’re on version ${esc(version)}. Every release is listed here, newest first.</p>
-  ${out.join('\n  ')}
+  ${releasesHtml(md)}
   <footer>
     <a href="/">Cornerfold</a>
     <a href="/about.html">About</a>
@@ -86,5 +94,7 @@ const html = `<!doctype html>
 </body>
 </html>
 `
-writeFileSync(new URL('../public/changes.html', import.meta.url), html)
-console.log(`changes.html generated (v${version})`)
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split(/[\\/]/).pop())) {
+  writeFileSync(new URL('../public/changes.html', import.meta.url), html)
+  console.log(`changes.html generated (v${version})`)
+}
